@@ -1,5 +1,5 @@
 {
-  "name": "webprompter",
+  "name": "prompto",
   "version": "1.0.0",
   "description": "Prompt management webapp with Kanban UI",
   "main": "server/server.js",

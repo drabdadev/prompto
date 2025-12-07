@@ -23,7 +23,7 @@ npm run dev           # Start both frontend and backend
 ## Project Structure
 
 ```
-webprompter/
+prompto/
 ├── server/
 │   ├── server.js           # Express server
 │   ├── database.js         # SQLite connection
@@ -46,7 +46,7 @@ webprompter/
 
 ## Database
 
-SQLite database stored at `server/data/webprompter.db`
+SQLite database stored at `server/data/prompto.db`
 
 ### Tables
 

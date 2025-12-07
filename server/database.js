@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { logger } = require('./config/logger');
 
-const DB_PATH = process.env.DATABASE_PATH || path.join(__dirname, 'data', 'webprompter.db');
+const DB_PATH = process.env.DATABASE_PATH || path.join(__dirname, 'data', 'prompto.db');
 
 function initializeDatabase() {
   return new Promise((resolve, reject) => {

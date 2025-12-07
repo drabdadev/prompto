@@ -1,7 +1,7 @@
 // Service Worker minimale per PWA
 // Richiesto per l'installabilità su Chrome
 
-const CACHE_NAME = 'webprompter-v1';
+const CACHE_NAME = 'prompto-v1';
 
 // Install event - attivazione immediata
 self.addEventListener('install', (event) => {

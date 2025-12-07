@@ -10,7 +10,7 @@ interface QuickAddPromptProps {
 }
 
 // LocalStorage key prefix for drafts
-const DRAFT_KEY_PREFIX = 'webprompter_draft_';
+const DRAFT_KEY_PREFIX = 'prompto_draft_';
 
 export function QuickAddPrompt({ projectId, onAdd }: QuickAddPromptProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
