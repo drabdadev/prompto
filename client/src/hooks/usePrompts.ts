@@ -139,11 +139,12 @@ export function usePrompts() {
   }, [activePrompts, filter]);
 
   // Get archived prompts filtered by type for a project
+  // Sort by updated_at DESC so most recently archived appear first
   const getArchivedPromptsByProject = useCallback((projectId: string) => {
     return archivedPrompts
       .filter(p => p.project_id === projectId)
       .filter(p => filter === 'all' || p.type === filter)
-      .sort((a, b) => a.position - b.position);
+      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
   }, [archivedPrompts, filter]);
 
   // Get all prompts (active + archived) for a project - used for drag detection
