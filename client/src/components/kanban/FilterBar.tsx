@@ -16,8 +16,8 @@ interface FilterBarProps {
 
 export function FilterBar({ filter, onFilterChange, onAddProject, editMode, onEditModeChange, isDarkMode, onDarkModeToggle }: FilterBarProps) {
   return (
-    <div className="mb-4">
-      <div className="flex items-center justify-between pb-4 border-b border-border">
+    <div className={editMode ? '' : 'mb-4'}>
+      <div className="flex items-center justify-between pb-3 border-b border-border">
       <div className="flex items-center gap-2">
         <ToggleGroup
           type="single"
@@ -69,12 +69,17 @@ export function FilterBar({ filter, onFilterChange, onAddProject, editMode, onEd
             aria-label="Toggle edit mode"
           />
         </div>
-        <Button onClick={onAddProject} size="sm">
-          <Plus className="h-4 w-4 mr-1" />
-          Aggiungi progetto
-        </Button>
       </div>
       </div>
+
+      {editMode && (
+        <div className="flex justify-center pt-6">
+          <Button onClick={onAddProject} size="sm">
+            <Plus className="h-4 w-4 mr-1" />
+            Aggiungi progetto
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
