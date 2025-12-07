@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Build
+client/dist/
+
+# Database
+server/data/
+*.db
+*.sqlite
+
+# Environment
+.env
+.env.local
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Playwright MCP
+.playwright-mcp/
