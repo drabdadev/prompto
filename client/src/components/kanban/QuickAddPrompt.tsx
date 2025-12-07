@@ -47,6 +47,19 @@ export function QuickAddPrompt({ projectId, onAdd }: QuickAddPromptProps) {
     adjustTextareaHeight();
   }, [content, adjustTextareaHeight]);
 
+  // Also adjust on mount after a small delay to ensure DOM is ready
+  useEffect(() => {
+    const timer = setTimeout(adjustTextareaHeight, 50);
+    return () => clearTimeout(timer);
+  }, [adjustTextareaHeight]);
+
+  // Recalculate height when window is resized (text reflows)
+  useEffect(() => {
+    const handleResize = () => adjustTextareaHeight();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [adjustTextareaHeight]);
+
   // Save draft to localStorage whenever content or type changes
   useEffect(() => {
     if (content.trim()) {
@@ -104,7 +117,7 @@ export function QuickAddPrompt({ projectId, onAdd }: QuickAddPromptProps) {
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Scrivi un prompt, premi invio per salvarlo"
-          className="min-h-[60px] max-h-[300px] text-sm resize-none border-0 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none rounded-b-none overflow-y-auto bg-transparent"
+          className="min-h-[60px] text-sm resize-none border-0 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none rounded-b-none overflow-hidden bg-transparent"
           disabled={isSubmitting}
         />
         {/* Bottom toolbar */}

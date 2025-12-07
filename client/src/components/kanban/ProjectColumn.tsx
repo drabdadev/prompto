@@ -200,7 +200,7 @@ export function ProjectColumn({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex-shrink-0 w-[640px] relative flip-container"
+      className="flex-shrink-0 w-[calc(100vw-4rem)] max-w-full sm:w-[500px] md:w-[600px] lg:w-[640px] min-w-0 relative flip-container"
     >
       {/* Flip Card */}
       <div

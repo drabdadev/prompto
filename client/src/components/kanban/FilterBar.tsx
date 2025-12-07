@@ -16,9 +16,9 @@ interface FilterBarProps {
 
 export function FilterBar({ filter, onFilterChange, onAddProject, editMode, onEditModeChange, isDarkMode, onDarkModeToggle }: FilterBarProps) {
   return (
-    <div className={editMode ? '' : 'mb-4'}>
-      <div className="flex items-center justify-between pb-3 border-b border-border">
-      <div className="flex items-center gap-2">
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-6 border-b border-border">
+      <div className="flex items-center gap-2 min-w-0">
         <ToggleGroup
           type="single"
           value={filter}

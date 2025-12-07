@@ -235,7 +235,7 @@ export function KanbanBoard() {
   return (
     <div className="h-screen flex flex-col p-6 bg-background">
       {/* Header with title */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <img src="/favicon.ico" alt="Prompto" className="w-8 h-8" />
           <h1 className="text-2xl font-bold text-foreground">Prompto</h1>
@@ -267,7 +267,7 @@ export function KanbanBoard() {
             items={projects.map((p) => p.id)}
             strategy={horizontalListSortingStrategy}
           >
-            <div className={`flex-1 overflow-x-auto kanban-scroll pt-6 ${focusedProjectId ? 'flex items-start justify-center' : ''}`}>
+            <div className={`flex-1 kanban-scroll pt-6 ${focusedProjectId ? 'flex items-start justify-center overflow-x-hidden' : 'overflow-x-auto'}`}>
               <div className={`flex gap-4 h-full pb-4 transition-all duration-300 ${focusedProjectId ? 'justify-center' : ''}`}>
                 {projects.map((project) => {
                   const isFocused = project.id === focusedProjectId;
