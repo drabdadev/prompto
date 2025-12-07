@@ -135,7 +135,7 @@ export function PromptCard({ prompt, projectId, onDelete, onArchive, onUpdate, s
   const cardClassName = [
     'p-3 bg-card group',
     isArchiving && 'prompt-card archive-animation',
-    isEditing && 'ring-2 ring-blue-500 border-transparent',
+    isEditing && 'border-blue-500 dark:border-blue-400 shadow-[0_0_0_3px_rgba(59,130,246,0.3),0_4px_12px_0_rgba(59,130,246,0.15)] dark:shadow-[0_0_0_3px_rgba(59,130,246,0.4),0_4px_12px_0_rgba(59,130,246,0.2)]',
     isDragging && 'shadow-xl z-50 cursor-grabbing',
     !isDragging && !isEditing && !isArchiving && 'transition-shadow duration-150 hover:shadow-lg cursor-grab',
   ].filter(Boolean).join(' ');
@@ -155,7 +155,7 @@ export function PromptCard({ prompt, projectId, onDelete, onArchive, onUpdate, s
             onChange={(e) => setEditContent(e.target.value)}
             onKeyDown={handleKeyDown}
             onBlur={handleSave}
-            className="min-h-[80px] max-h-[400px] text-sm resize-none overflow-y-auto"
+            className="min-h-[80px] max-h-[400px] text-sm resize-none overflow-y-auto border border-transparent dark:border-slate-500 rounded-md focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none bg-transparent"
             placeholder="Enter prompt content..."
           />
           <div className="flex justify-end gap-2 text-xs text-muted-foreground">

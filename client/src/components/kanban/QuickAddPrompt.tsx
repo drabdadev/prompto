@@ -93,29 +93,32 @@ export function QuickAddPrompt({ projectId, onAdd }: QuickAddPromptProps) {
 
   return (
     <div
-      className="bg-card border border-border rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent"
+      className="relative rounded-lg"
       data-project-id={projectId}
     >
-      <Textarea
-        ref={textareaRef}
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="Scrivi un prompt, premi invio per salvarlo"
-        className="min-h-[60px] max-h-[300px] text-sm resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 rounded-b-none overflow-y-auto"
-        disabled={isSubmitting}
-      />
-      <div className="flex items-center justify-between gap-2 px-3 py-2 border-t border-border bg-muted/50 rounded-b-lg">
+      {/* Elevated box with light background + combined shadow (highlight top, shadow bottom) */}
+      <div className="rounded-lg bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.9),0_1px_3px_0_rgba(0,0,0,0.08),0_4px_12px_0_rgba(0,0,0,0.1)] dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_1px_3px_0_rgba(0,0,0,0.3),0_4px_12px_0_rgba(0,0,0,0.4)] hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.9),0_2px_4px_0_rgba(0,0,0,0.1),0_6px_16px_0_rgba(0,0,0,0.12)] dark:hover:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_2px_4px_0_rgba(0,0,0,0.4),0_6px_16px_0_rgba(0,0,0,0.5)] focus-within:border-blue-500 focus-within:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.9),0_0_0_3px_rgba(59,130,246,0.3),0_4px_12px_0_rgba(59,130,246,0.15)] dark:focus-within:border-blue-400 dark:focus-within:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1),0_0_0_3px_rgba(59,130,246,0.4),0_4px_12px_0_rgba(59,130,246,0.2)] transition-all duration-200">
+        <Textarea
+          ref={textareaRef}
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Scrivi un prompt, premi invio per salvarlo"
+          className="min-h-[60px] max-h-[300px] text-sm resize-none border-0 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none rounded-b-none overflow-y-auto bg-transparent"
+          disabled={isSubmitting}
+        />
+        {/* Bottom toolbar */}
+        <div className="flex items-center justify-between gap-2 px-3 py-2 border-t border-slate-200/60 dark:border-slate-600/60 bg-slate-50/80 dark:bg-slate-800/50 rounded-b-lg">
         <span className="text-xs text-muted-foreground">Tab per cambiare tipo</span>
         <ToggleGroup
           type="single"
           value={type}
           onValueChange={(value) => value && setType(value as PromptType)}
-          className="justify-end"
+          className="justify-end focus-visible:ring-0 focus-visible:ring-offset-0"
         >
           <ToggleGroupItem
             value="ui"
-            className="px-2 py-1 text-xs gap-1 data-[state=on]:bg-green-100 data-[state=on]:text-green-800 dark:data-[state=on]:bg-green-900 dark:data-[state=on]:text-green-200 rounded"
+            className="px-2 py-1 text-xs gap-1 data-[state=on]:bg-green-100 data-[state=on]:text-green-800 dark:data-[state=on]:bg-green-900 dark:data-[state=on]:text-green-200 rounded focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 focus:outline-none"
             tabIndex={-1}
           >
             <Layout className="h-3 w-3" />
@@ -123,13 +126,14 @@ export function QuickAddPrompt({ projectId, onAdd }: QuickAddPromptProps) {
           </ToggleGroupItem>
           <ToggleGroupItem
             value="backend"
-            className="px-2 py-1 text-xs gap-1 data-[state=on]:bg-blue-100 data-[state=on]:text-blue-800 dark:data-[state=on]:bg-blue-900 dark:data-[state=on]:text-blue-200 rounded"
+            className="px-2 py-1 text-xs gap-1 data-[state=on]:bg-blue-100 data-[state=on]:text-blue-800 dark:data-[state=on]:bg-blue-900 dark:data-[state=on]:text-blue-200 rounded focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 focus:outline-none"
             tabIndex={-1}
           >
             <Server className="h-3 w-3" />
             Backend
           </ToggleGroupItem>
         </ToggleGroup>
+        </div>
       </div>
     </div>
   );
