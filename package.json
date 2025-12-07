@@ -12,13 +12,15 @@
     "init-db": "node server/init-database.js",
     "install-all": "npm install && cd client && npm install",
     "test:server": "jest --config jest.server.config.js",
-    "electron:dev": "concurrently \"npm run server\" \"npm run client\" \"wait-on http://localhost:3080 && cross-env NODE_ENV=development electron .\"",
+    "electron:dev": "concurrently \"npm run client\" \"wait-on http://localhost:3080 && cross-env NODE_ENV=development electron .\"",
     "electron:build": "npm run build && electron-builder && npm run rebuild:native",
     "electron:build:mac": "npm run build && electron-builder --mac && npm run rebuild:native",
     "electron:build:win": "npm run build && electron-builder --win && npm run rebuild:native",
     "electron:build:linux": "npm run build && electron-builder --linux && npm run rebuild:native",
     "electron:pack": "electron-builder --dir",
-    "rebuild:native": "npm rebuild better-sqlite3"
+    "rebuild:native": "npm rebuild better-sqlite3",
+    "setup:web": "npm rebuild better-sqlite3",
+    "setup:electron": "npx electron-rebuild -f -w better-sqlite3"
   },
   "keywords": [
     "prompts",

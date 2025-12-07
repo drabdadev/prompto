@@ -13,14 +13,15 @@ import '@/types/electron.d.ts';
 
 // Determine base URL based on environment
 const getBaseUrl = (): string => {
-  // In development with Vite proxy
-  if (import.meta.env.DEV) {
-    return '/api';
-  }
-  // In Electron production, use dynamic port stored in sessionStorage
+  // In Electron (dev or production), use dynamic port stored in sessionStorage
+  // This is set by initElectronApi() before any API calls
   const serverPort = sessionStorage.getItem('serverPort');
   if (serverPort) {
     return `http://localhost:${serverPort}/api`;
+  }
+  // In web development with Vite proxy
+  if (import.meta.env.DEV) {
+    return '/api';
   }
   // Fallback for web production
   return '/api';
