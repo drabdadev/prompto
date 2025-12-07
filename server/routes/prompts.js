@@ -50,6 +50,36 @@ router.get('/project/:projectId', (req, res) => {
   }
 });
 
+// PUT /api/prompts/reorder - Reorder prompts within a project
+// NOTE: This must be BEFORE /:id routes to avoid "reorder" being treated as an ID
+router.put('/reorder', (req, res) => {
+  try {
+    const db = req.app.locals.db;
+    const { projectId, promptIds } = req.body;
+
+    if (!projectId || !Array.isArray(promptIds)) {
+      return res.status(400).json({ error: 'projectId and promptIds array are required' });
+    }
+
+    const updateStmt = db.prepare('UPDATE prompts SET position = ? WHERE id = ?');
+
+    db.transaction(() => {
+      promptIds.forEach((id, index) => {
+        updateStmt.run(index, id);
+      });
+    })();
+
+    const prompts = db.prepare(
+      'SELECT * FROM prompts WHERE project_id = ? ORDER BY position ASC'
+    ).all(projectId);
+
+    res.json(prompts);
+  } catch (err) {
+    logger.error('Error reordering prompts:', err);
+    res.status(500).json({ error: 'Failed to reorder prompts' });
+  }
+});
+
 // POST /api/prompts - Create new prompt
 router.post('/', (req, res) => {
   try {
@@ -170,35 +200,6 @@ router.put('/:id/move', (req, res) => {
   } catch (err) {
     logger.error('Error moving prompt:', err);
     res.status(500).json({ error: 'Failed to move prompt' });
-  }
-});
-
-// PUT /api/prompts/reorder - Reorder prompts within a project
-router.put('/reorder', (req, res) => {
-  try {
-    const db = req.app.locals.db;
-    const { projectId, promptIds } = req.body;
-
-    if (!projectId || !Array.isArray(promptIds)) {
-      return res.status(400).json({ error: 'projectId and promptIds array are required' });
-    }
-
-    const updateStmt = db.prepare('UPDATE prompts SET position = ? WHERE id = ?');
-
-    db.transaction(() => {
-      promptIds.forEach((id, index) => {
-        updateStmt.run(index, id);
-      });
-    })();
-
-    const prompts = db.prepare(
-      'SELECT * FROM prompts WHERE project_id = ? ORDER BY position ASC'
-    ).all(projectId);
-
-    res.json(prompts);
-  } catch (err) {
-    logger.error('Error reordering prompts:', err);
-    res.status(500).json({ error: 'Failed to reorder prompts' });
   }
 });
 

@@ -43,10 +43,12 @@ export function PromptCard({ prompt, projectId, onDelete, onArchive, onUpdate, s
   });
 
   // Use simpler transform like columns - disable transitions during drag for performance
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition: isDragging ? undefined : transition,
-    opacity: isDragging ? 0.9 : 1,
+    opacity: isDragging ? 0.95 : 1,
+    zIndex: isDragging ? 9999 : undefined,
+    position: isDragging ? 'relative' : undefined,
   };
 
   // Auto-resize textarea based on content
@@ -175,11 +177,11 @@ export function PromptCard({ prompt, projectId, onDelete, onArchive, onUpdate, s
     // Trigger animation
     setIsArchiving(true);
 
-    // After animation completes, actually archive (match CSS duration of 0.35s)
+    // After animation completes, actually archive
     setTimeout(() => {
       onArchive(prompt.id, !showArchived);
       setIsArchiving(false);
-    }, 350);
+    }, 500);
   };
 
   const handleTypeToggle = (e: React.MouseEvent) => {

@@ -7,18 +7,12 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
-  DragOverlay,
-  DragStartEvent,
-  UniqueIdentifier,
 } from '@dnd-kit/core';
 import {
   SortableContext,
   horizontalListSortingStrategy,
   arrayMove,
 } from '@dnd-kit/sortable';
-import { Layout, Server } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { useProjects } from '@/hooks/useProjects';
 import { usePrompts } from '@/hooks/usePrompts';
 import { useDarkMode } from '@/hooks/useDarkMode';
@@ -40,8 +34,6 @@ export function KanbanBoard() {
   } = useProjects();
 
   const {
-    activePrompts,
-    archivedPrompts,
     filter,
     setFilter,
     createPrompt,
@@ -66,41 +58,20 @@ export function KanbanBoard() {
   // Focus mode - when set, only show this project centered
   const [focusedProjectId, setFocusedProjectId] = useState<string | null>(null);
 
-  // DnD active item state
-  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
-  const [activeType, setActiveType] = useState<'column' | 'prompt' | null>(null);
-
-  // DnD sensors - optimized for smooth drag operations
+  // DnD sensors
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5, // Lower threshold for quicker activation
+        distance: 8,
       },
     }),
     useSensor(KeyboardSensor)
-  );
-
-  // Handle drag start - track active item
-  const handleDragStart = useCallback(
-    (event: DragStartEvent) => {
-      const { active } = event;
-      setActiveId(active.id);
-
-      // Determine if dragging a column or prompt
-      const isColumn = projects.some(p => p.id === active.id);
-      setActiveType(isColumn ? 'column' : 'prompt');
-    },
-    [projects]
   );
 
   // Handle drag end for both columns and prompts
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
       const { active, over } = event;
-
-      // Reset active state
-      setActiveId(null);
-      setActiveType(null);
 
       if (!over || active.id === over.id) return;
 
@@ -162,11 +133,6 @@ export function KanbanBoard() {
     },
     [projects, reorderProjects, getActivePromptsByProject, reorderPrompts, movePrompt]
   );
-
-  // Get the active prompt for DragOverlay
-  const activePrompt = activeId && activeType === 'prompt'
-    ? [...activePrompts, ...archivedPrompts].find(p => p.id === activeId)
-    : null;
 
   // Project handlers
   const handleAddProject = () => {
@@ -258,7 +224,6 @@ export function KanbanBoard() {
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
-          onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
           <SortableContext
@@ -304,28 +269,7 @@ export function KanbanBoard() {
             </div>
           </SortableContext>
 
-          {/* Drag Overlay for prompt cards */}
-          <DragOverlay dropAnimation={null}>
-            {activePrompt ? (
-              <Card className="p-3 bg-card shadow-xl w-[600px] opacity-90">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <Badge variant={activePrompt.type === 'ui' ? 'ui' : 'backend'} className="gap-1">
-                    {activePrompt.type === 'ui' ? (
-                      <Layout className="h-3 w-3" />
-                    ) : (
-                      <Server className="h-3 w-3" />
-                    )}
-                    {activePrompt.type === 'ui' ? 'FRONTEND' : 'BACKEND'}
-                  </Badge>
-                </div>
-                <p className="text-sm text-card-foreground whitespace-pre-wrap break-words">
-                  {activePrompt.content.length > 150
-                    ? activePrompt.content.substring(0, 150) + '...'
-                    : activePrompt.content}
-                </p>
-              </Card>
-            ) : null}
-          </DragOverlay>
+          {/* No DragOverlay - use the original element for drag preview */}
         </DndContext>
       )}
 
