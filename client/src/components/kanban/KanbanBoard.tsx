@@ -200,9 +200,7 @@ export function KanbanBoard() {
   };
 
   const handleDeletePrompt = async (id: string) => {
-    if (window.confirm('Delete this prompt?')) {
-      await deletePrompt(id);
-    }
+    await deletePrompt(id);
   };
 
   const handleAddPrompt = async (projectId: string, content: string, type: PromptType) => {

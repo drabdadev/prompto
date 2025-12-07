@@ -188,3 +188,61 @@
     0 8px 40px rgba(59, 130, 246, 0.1),
     0 16px 60px rgba(59, 130, 246, 0.08);
 }
+
+/* Prompt Card Flip Animation for Delete Confirmation */
+.prompt-flip-container {
+  perspective: 1000px;
+  position: relative;
+}
+
+.prompt-flip-card {
+  position: relative;
+  width: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.prompt-flip-card.flipped {
+  transform: rotateY(180deg);
+}
+
+.prompt-flip-front,
+.prompt-flip-back {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.prompt-flip-front {
+  position: relative;
+  z-index: 2;
+  transform: rotateY(0deg);
+}
+
+.prompt-flip-back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotateY(180deg);
+  z-index: 1;
+}
+
+/* Device-specific labels: show keyboard shortcuts on desktop, action names on mobile */
+/* Default (mobile/touch): hide hover-device elements */
+.hover-device\:inline {
+  display: none;
+}
+.hover-device\:hidden {
+  display: inline;
+}
+
+/* Desktop (hover capable): show keyboard shortcuts */
+@media (hover: hover) and (pointer: fine) {
+  .hidden.hover-device\:inline {
+    display: inline;
+  }
+  .hover-device\:hidden {
+    display: none;
+  }
+}

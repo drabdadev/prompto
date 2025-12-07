@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Copy, Trash2, Layout, Server, Check, RotateCcw, GripHorizontal } from 'lucide-react';
+import { Copy, Trash2, Layout, Server, Check, RotateCcw, GripHorizontal, X, AlertTriangle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,7 +24,10 @@ export function PromptCard({ prompt, projectId, onDelete, onArchive, onUpdate, s
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(prompt.content);
   const [isArchiving, setIsArchiving] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const deleteConfirmRef = useRef<HTMLDivElement>(null);
 
   const {
     attributes,
@@ -106,10 +109,64 @@ export function PromptCard({ prompt, projectId, onDelete, onArchive, onUpdate, s
     }
   };
 
-  const handleDelete = (e: React.MouseEvent) => {
+  // Delete confirmation handlers
+  const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onDelete(prompt.id);
+    setIsConfirmingDelete(true);
   };
+
+  const confirmDelete = useCallback(() => {
+    onDelete(prompt.id);
+    setIsConfirmingDelete(false);
+  }, [onDelete, prompt.id]);
+
+  const cancelDelete = useCallback(() => {
+    setIsConfirmingDelete(false);
+  }, []);
+
+  // Handle keyboard events for delete confirmation
+  useEffect(() => {
+    if (!isConfirmingDelete) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        confirmDelete();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelDelete();
+      }
+    };
+
+    // Focus the confirmation panel for keyboard events
+    deleteConfirmRef.current?.focus();
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isConfirmingDelete, confirmDelete, cancelDelete]);
+
+  // Handle Delete key shortcut when hovering over card (not editing)
+  useEffect(() => {
+    if (!isHovered || isEditing || isConfirmingDelete) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        // Don't trigger if user is typing in any input/textarea
+        const activeElement = document.activeElement;
+        const isTyping = activeElement instanceof HTMLInputElement ||
+                        activeElement instanceof HTMLTextAreaElement ||
+                        activeElement?.getAttribute('contenteditable') === 'true';
+
+        if (!isTyping) {
+          e.preventDefault();
+          setIsConfirmingDelete(true);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isHovered, isEditing, isConfirmingDelete]);
 
   const handleArchive = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -133,21 +190,28 @@ export function PromptCard({ prompt, projectId, onDelete, onArchive, onUpdate, s
 
   // Build className - avoid transition-all during drag for performance
   const cardClassName = [
-    'p-3 bg-card group',
+    'p-3 bg-card group relative',
     isArchiving && 'prompt-card archive-animation',
     isEditing && 'border-blue-500 dark:border-blue-400 shadow-[0_0_0_3px_rgba(59,130,246,0.3),0_4px_12px_0_rgba(59,130,246,0.15)] dark:shadow-[0_0_0_3px_rgba(59,130,246,0.4),0_4px_12px_0_rgba(59,130,246,0.2)]',
     isDragging && 'shadow-xl z-50 cursor-grabbing',
-    !isDragging && !isEditing && !isArchiving && 'transition-shadow duration-150 hover:shadow-lg cursor-grab',
+    !isDragging && !isEditing && !isArchiving && !isConfirmingDelete && 'transition-shadow duration-150 hover:shadow-lg cursor-grab',
   ].filter(Boolean).join(' ');
 
   return (
-    <Card
+    <div
       ref={setNodeRef}
       style={style}
-      {...(isEditing ? {} : { ...attributes, ...listeners })}
-      className={cardClassName}
+      className="prompt-flip-container"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      {isEditing ? (
+      <div className={`prompt-flip-card ${isConfirmingDelete ? 'flipped' : ''}`}>
+        {/* Front Face - Normal Card */}
+        <Card
+          {...(isEditing || isConfirmingDelete ? {} : { ...attributes, ...listeners })}
+          className={`${cardClassName} prompt-flip-front`}
+        >
+          {isEditing ? (
         <div className="space-y-2">
           <Textarea
             ref={textareaRef}
@@ -207,7 +271,7 @@ export function PromptCard({ prompt, projectId, onDelete, onArchive, onUpdate, s
             variant="ghost"
             size="icon"
             className="h-7 w-7 text-destructive hover:text-destructive"
-            onClick={handleDelete}
+            onClick={handleDeleteClick}
             title="Delete prompt"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -236,6 +300,42 @@ export function PromptCard({ prompt, projectId, onDelete, onArchive, onUpdate, s
           {prompt.type === 'ui' ? 'Frontend' : 'Backend'}
         </button>
       </div>
-    </Card>
+        </Card>
+
+        {/* Back Face - Delete Confirmation */}
+        <Card
+          ref={deleteConfirmRef}
+          tabIndex={-1}
+          className="p-3 bg-destructive/10 border-destructive/30 prompt-flip-back flex flex-col items-center justify-center overflow-hidden"
+        >
+          <div className="flex flex-col items-center gap-2 text-center w-full">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
+              <p className="font-medium text-sm text-card-foreground">Vuoi eliminare?</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={cancelDelete}
+                className="h-7 px-2 text-xs"
+              >
+                <span className="hidden hover-device:inline">Esc</span>
+                <span className="hover-device:hidden">Annulla</span>
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={confirmDelete}
+                className="h-7 px-2 text-xs"
+              >
+                <span className="hidden hover-device:inline">Invio</span>
+                <span className="hover-device:hidden">Elimina</span>
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
+    </div>
   );
 }
