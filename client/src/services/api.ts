@@ -9,13 +9,43 @@ import type {
   MovePromptInput,
   FilterType,
 } from '@/types';
+import '@/types/electron.d.ts';
+
+// Determine base URL based on environment
+const getBaseUrl = (): string => {
+  // In development with Vite proxy
+  if (import.meta.env.DEV) {
+    return '/api';
+  }
+  // In Electron production, use dynamic port stored in sessionStorage
+  const serverPort = sessionStorage.getItem('serverPort');
+  if (serverPort) {
+    return `http://localhost:${serverPort}/api`;
+  }
+  // Fallback for web production
+  return '/api';
+};
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: getBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+// Initialize server port for Electron
+export const initElectronApi = async (): Promise<void> => {
+  if (window.electronAPI?.isElectron) {
+    try {
+      const port = await window.electronAPI.getServerPort();
+      sessionStorage.setItem('serverPort', port.toString());
+      api.defaults.baseURL = `http://localhost:${port}/api`;
+      console.log(`API configured for Electron on port ${port}`);
+    } catch (err) {
+      console.error('Failed to get server port:', err);
+    }
+  }
+};
 
 // Projects API
 export const projectsApi = {

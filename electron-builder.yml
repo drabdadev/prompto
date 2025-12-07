@@ -1,0 +1,138 @@
+appId: com.prompto.app
+productName: Prompto
+copyright: Copyright © 2024 Michele Melis
+
+directories:
+  output: dist-electron
+  buildResources: build
+
+files:
+  - electron/**/*
+  - server/**/*
+  - client/dist/**/*
+  - package.json
+  - "!**/*.map"
+  - "!**/node_modules/*/{CHANGELOG.md,README.md,readme.md,README,readme}"
+  - "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}"
+  - "!**/node_modules/**/*.d.ts"
+  - "!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}"
+  - "!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}"
+
+extraResources:
+  - from: server
+    to: server
+    filter:
+      - "**/*"
+      - "!data/**"
+      - "!**/*.log"
+  # Include all node_modules except dev dependencies and large build tools
+  - from: node_modules
+    to: node_modules
+    filter:
+      - "**/*"
+      - "!**/electron/**"
+      - "!**/electron-builder/**"
+      - "!**/app-builder-bin/**"
+      - "!**/app-builder-lib/**"
+      - "!**/builder-util/**"
+      - "!**/builder-util-runtime/**"
+      - "!**/electron-winstaller/**"
+      - "!**/7zip-bin/**"
+      - "!**/typescript/**"
+      - "!**/eslint/**"
+      - "!**/prettier/**"
+      - "!**/nodemon/**"
+      - "!**/jest/**"
+      - "!**/vite/**"
+      - "!**/postcss/**"
+      - "!**/tailwindcss/**"
+      - "!**/autoprefixer/**"
+      - "!**/@electron/**"
+      - "!**/@vitejs/**"
+      - "!**/@types/**"
+      - "!**/@typescript-eslint/**"
+      - "!**/@eslint/**"
+      - "!**/dmg-builder/**"
+      - "!**/postject/**"
+      - "!**/config-file-ts/**"
+      - "!**/*.md"
+      - "!**/*.ts"
+      - "!**/test/**"
+      - "!**/tests/**"
+      - "!**/__tests__/**"
+      - "!**/docs/**"
+      - "!**/.git/**"
+
+asar: true
+asarUnpack:
+  - "**/*.node"
+  - "**/better-sqlite3/**"
+
+npmRebuild: true
+
+mac:
+  category: public.app-category.productivity
+  icon: build/icon.icns
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+    - target: zip
+      arch:
+        - x64
+        - arm64
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+  window:
+    width: 540
+    height: 380
+
+win:
+  icon: build/icon.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeaderIcon: build/icon.ico
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+
+linux:
+  icon: build/icons
+  category: Utility
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+
+# Auto-update disabled for now (requires GitHub repo)
+# publish:
+#   provider: github
+#   releaseType: release
+
+electronDownload:
+  mirror: https://npmmirror.com/mirrors/electron/

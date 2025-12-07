@@ -18,9 +18,12 @@ app.use(helmet());
 app.use(compression());
 
 // CORS configuration
-const allowedOrigins = process.env.NODE_ENV === 'production'
-  ? [process.env.CLIENT_URL]
-  : ['http://localhost:3080', 'http://127.0.0.1:3080'];
+const isElectron = process.env.ELECTRON === 'true';
+const allowedOrigins = isElectron
+  ? true // Allow all origins in Electron (local app)
+  : process.env.NODE_ENV === 'production'
+    ? [process.env.CLIENT_URL]
+    : ['http://localhost:3080', 'http://127.0.0.1:3080'];
 
 app.use(cors({
   origin: allowedOrigins,

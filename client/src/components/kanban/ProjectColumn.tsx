@@ -134,14 +134,14 @@ export function ProjectColumn({
 
   const handleFlipToggle = () => {
     setIsFlipping(true);
-    // Change content at the halfway point of animation
+    // Change content at the halfway point of animation (0.35s / 2 = 175ms)
     setTimeout(() => {
       setShowArchived(!showArchived);
-    }, 250);
-    // Reset flipping state after animation completes
+    }, 175);
+    // Reset flipping state after animation completes (0.35s = 350ms)
     setTimeout(() => {
       setIsFlipping(false);
-    }, 500);
+    }, 350);
   };
 
   // Render the column content (shared between front and back)

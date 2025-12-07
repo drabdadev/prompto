@@ -51,6 +51,21 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Enable GPU acceleration for smoother rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  /* Electron-specific: add top padding for macOS traffic lights */
+  body.electron {
+    padding-top: 28px;
+  }
+}
+
+/* GPU acceleration hints for animated elements */
+@layer utilities {
+  .gpu-accelerated {
+    transform: translateZ(0);
+    will-change: transform, opacity;
   }
 }
 
@@ -136,11 +151,13 @@
 
 .flip-card {
   transform-style: preserve-3d;
-  transition: background-color 0.25s ease;
+  transition: background-color 0.2s ease;
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 .flip-card.flipping {
-  animation: flipAnimation 0.5s ease-in-out;
+  animation: flipAnimation 0.35s ease-in-out;
 }
 
 @keyframes flipAnimation {
@@ -159,8 +176,9 @@
 /* Only apply 3D transforms during archive animation for performance */
 .prompt-card.archive-animation {
   transform-style: preserve-3d;
-  animation: archiveToBack 0.5s ease-in-out forwards;
+  animation: archiveToBack 0.35s ease-in-out forwards;
   pointer-events: none;
+  will-change: transform, opacity;
 }
 
 @keyframes archiveToBack {
@@ -199,7 +217,8 @@
   position: relative;
   width: 100%;
   transform-style: preserve-3d;
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
 }
 
 .prompt-flip-card.flipped {

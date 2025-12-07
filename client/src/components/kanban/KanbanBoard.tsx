@@ -70,11 +70,11 @@ export function KanbanBoard() {
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const [activeType, setActiveType] = useState<'column' | 'prompt' | null>(null);
 
-  // DnD sensors
+  // DnD sensors - optimized for smooth drag operations
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 5, // Lower threshold for quicker activation
       },
     }),
     useSensor(KeyboardSensor)

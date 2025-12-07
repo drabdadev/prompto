@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Copy, Trash2, Layout, Server, Check, RotateCcw, GripHorizontal, X, AlertTriangle } from 'lucide-react';
+import { Copy, Trash2, Layout, Server, Check, RotateCcw, GripHorizontal, AlertTriangle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -175,11 +175,11 @@ export function PromptCard({ prompt, projectId, onDelete, onArchive, onUpdate, s
     // Trigger animation
     setIsArchiving(true);
 
-    // After animation completes, actually archive
+    // After animation completes, actually archive (match CSS duration of 0.35s)
     setTimeout(() => {
       onArchive(prompt.id, !showArchived);
       setIsArchiving(false);
-    }, 500);
+    }, 350);
   };
 
   const handleTypeToggle = (e: React.MouseEvent) => {
