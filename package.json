@@ -13,7 +13,11 @@
     "install-all": "npm install && cd client && npm install",
     "test:server": "jest --config jest.server.config.js"
   },
-  "keywords": ["prompts", "kanban", "management"],
+  "keywords": [
+    "prompts",
+    "kanban",
+    "management"
+  ],
   "author": "Michele Melis",
   "license": "MIT",
   "dependencies": {
