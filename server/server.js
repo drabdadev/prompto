@@ -61,7 +61,7 @@ initializeDatabase()
     });
 
     app.listen(PORT, () => {
-      logger.info(`WebPrompter server running on port ${PORT}`);
+      logger.info(`Prompto server running on port ${PORT}`);
     });
   })
   .catch((err) => {

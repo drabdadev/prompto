@@ -236,7 +236,7 @@ export function KanbanBoard() {
     <div className="h-screen flex flex-col p-6 bg-background">
       {/* Header with title */}
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-foreground">WebPrompter</h1>
+        <h1 className="text-2xl font-bold text-foreground">Prompto</h1>
       </div>
 
       {/* Filters */}

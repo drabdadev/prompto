@@ -1,6 +1,6 @@
 {
-  "name": "WebPrompter",
-  "short_name": "WebPrompter",
+  "name": "Prompto",
+  "short_name": "Prompto",
   "description": "Prompt management for AI agents",
   "start_url": "/",
   "display": "standalone",

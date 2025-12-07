@@ -1,4 +1,4 @@
-# WebPrompter
+# Prompto
 
 Prompt management webapp with Kanban-style UI for organizing AI agent prompts by project.
 
