@@ -349,9 +349,17 @@ async function startBackendServer() {
 
   expressApp = express();
 
-  // Log all incoming requests for debugging
+  // Log all incoming requests and responses for debugging
   expressApp.use((req, res, next) => {
+    const startTime = Date.now();
     debugLog(`REQUEST: ${req.method} ${req.url} from ${req.headers.origin || 'no-origin'}`);
+
+    // Log response when finished
+    res.on('finish', () => {
+      const duration = Date.now() - startTime;
+      debugLog(`RESPONSE: ${req.method} ${req.url} -> ${res.statusCode} (${duration}ms)`);
+    });
+
     next();
   });
 
@@ -393,7 +401,8 @@ async function startBackendServer() {
 
         // Error handling middleware
         expressApp.use((err, req, res, next) => {
-          console.error('Server error:', err);
+          debugLog(`ERROR: ${req.method} ${req.url} - ${err.message}`);
+          debugLog(err.stack);
           res.status(500).json({ error: 'Internal server error' });
         });
 
