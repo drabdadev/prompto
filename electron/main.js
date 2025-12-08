@@ -2,6 +2,8 @@ const { app, BrowserWindow, shell, ipcMain, Menu, dialog } = require('electron')
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const net = require('net');
+const fs = require('fs');
+const https = require('https');
 
 // Performance optimizations for smooth animations
 app.commandLine.appendSwitch('enable-features', 'Metal'); // Enable Metal on macOS
@@ -20,7 +22,44 @@ let isManualUpdateCheck = false; // Track manual update checks
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
 /**
- * Configure and setup auto-updater
+ * Download file from URL to local path
+ */
+function downloadFile(url, destPath) {
+  return new Promise((resolve, reject) => {
+    const file = fs.createWriteStream(destPath);
+
+    const request = (urlString) => {
+      https.get(urlString, {
+        headers: { 'User-Agent': 'Prompto-Updater' }
+      }, (response) => {
+        // Handle redirects
+        if (response.statusCode === 302 || response.statusCode === 301) {
+          request(response.headers.location);
+          return;
+        }
+
+        if (response.statusCode !== 200) {
+          reject(new Error(`HTTP ${response.statusCode}`));
+          return;
+        }
+
+        response.pipe(file);
+        file.on('finish', () => {
+          file.close();
+          resolve(destPath);
+        });
+      }).on('error', (err) => {
+        fs.unlink(destPath, () => {});
+        reject(err);
+      });
+    };
+
+    request(url);
+  });
+}
+
+/**
+ * Configure and setup auto-updater (manual install for unsigned apps)
  */
 function setupAutoUpdater() {
   // Don't check for updates in development
@@ -29,35 +68,74 @@ function setupAutoUpdater() {
     return;
   }
 
-  // Configure auto-updater
-  autoUpdater.autoDownload = false; // Don't download automatically, ask user first
-  autoUpdater.autoInstallOnAppQuit = true;
+  // Configure auto-updater - only for checking, not installing
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = false;
 
-  // Force GitHub provider with explicit configuration
   autoUpdater.setFeedURL({
     provider: 'github',
     owner: 'drabdadev',
     repo: 'prompto'
   });
 
-  // Event handlers
   autoUpdater.on('checking-for-update', () => {
     console.log('Checking for updates...');
   });
 
   autoUpdater.on('update-available', (info) => {
     console.log('Update available:', info.version);
+
+    // Determine DMG filename based on architecture
+    const arch = process.arch === 'arm64' ? 'arm64' : '';
+    const dmgName = arch ? `Prompto-${info.version}-arm64.dmg` : `Prompto-${info.version}.dmg`;
+    const dmgUrl = `https://github.com/drabdadev/prompto/releases/download/v${info.version}/${dmgName}`;
+
     dialog.showMessageBox(mainWindow, {
       type: 'info',
       title: 'Aggiornamento disponibile',
-      message: `È disponibile una nuova versione di Prompto (v${info.version})`,
-      detail: 'Vuoi scaricarla ora?',
+      message: `È disponibile Prompto v${info.version}`,
+      detail: 'Vuoi scaricare e installare l\'aggiornamento?\n\nDopo il download, il DMG verrà aperto automaticamente. Trascina Prompto in Applications per aggiornare.',
       buttons: ['Scarica', 'Più tardi'],
       defaultId: 0,
       cancelId: 1
-    }).then((result) => {
+    }).then(async (result) => {
       if (result.response === 0) {
-        autoUpdater.downloadUpdate();
+        try {
+          // Show downloading message
+          const downloadPath = path.join(app.getPath('downloads'), dmgName);
+
+          dialog.showMessageBox(mainWindow, {
+            type: 'info',
+            title: 'Download in corso',
+            message: 'Download in corso...',
+            detail: `Salvando in: ${downloadPath}`,
+            buttons: ['OK']
+          });
+
+          console.log(`Downloading ${dmgUrl} to ${downloadPath}`);
+          await downloadFile(dmgUrl, downloadPath);
+
+          // Open the DMG
+          console.log('Opening DMG:', downloadPath);
+          await shell.openPath(downloadPath);
+
+          dialog.showMessageBox(mainWindow, {
+            type: 'info',
+            title: 'Aggiornamento scaricato',
+            message: 'Il DMG è stato aperto',
+            detail: 'Trascina Prompto nella cartella Applications per aggiornare.\n\nChiudi questa versione prima di aprire quella nuova.',
+            buttons: ['OK']
+          });
+
+        } catch (err) {
+          console.error('Download failed:', err);
+          dialog.showMessageBox(mainWindow, {
+            type: 'error',
+            title: 'Errore download',
+            message: 'Impossibile scaricare l\'aggiornamento',
+            detail: err.message
+          });
+        }
       }
     });
   });
@@ -73,34 +151,6 @@ function setupAutoUpdater() {
         detail: `Versione corrente: v${app.getVersion()}`
       });
     }
-  });
-
-  autoUpdater.on('download-progress', (progress) => {
-    console.log(`Download progress: ${Math.round(progress.percent)}%`);
-    // Could send to renderer for progress bar
-    mainWindow?.webContents.send('update-download-progress', progress.percent);
-  });
-
-  autoUpdater.on('update-downloaded', (info) => {
-    console.log('Update downloaded:', info.version);
-
-    dialog.showMessageBox(mainWindow, {
-      type: 'info',
-      title: 'Aggiornamento pronto',
-      message: `Prompto v${info.version} è stato scaricato`,
-      detail: 'L\'aggiornamento verrà installato al prossimo avvio.\nVuoi riavviare ora?',
-      buttons: ['Riavvia ora', 'Più tardi'],
-      defaultId: 0,
-      cancelId: 1
-    }).then((result) => {
-      if (result.response === 0) {
-        // Workaround for M1 Mac bug: use setTimeout + app.exit()
-        // autoInstallOnAppQuit handles the actual installation
-        setTimeout(() => {
-          app.exit(0);
-        }, 100);
-      }
-    });
   });
 
   autoUpdater.on('error', (err) => {
