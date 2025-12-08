@@ -1,4 +1,4 @@
-import { Plus, Layout, Server, Layers, Settings, Sun, Moon } from 'lucide-react';
+import { Plus, Layout, Server, Layers, Settings, Sun, Moon, HardDrive } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -12,9 +12,10 @@ interface FilterBarProps {
   onEditModeChange: (enabled: boolean) => void;
   isDarkMode: boolean;
   onDarkModeToggle: () => void;
+  onDatabaseManagement: () => void;
 }
 
-export function FilterBar({ filter, onFilterChange, onAddProject, editMode, onEditModeChange, isDarkMode, onDarkModeToggle }: FilterBarProps) {
+export function FilterBar({ filter, onFilterChange, onAddProject, editMode, onEditModeChange, isDarkMode, onDarkModeToggle, onDatabaseManagement }: FilterBarProps) {
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 pb-6 border-b border-border">
@@ -73,10 +74,14 @@ export function FilterBar({ filter, onFilterChange, onAddProject, editMode, onEd
       </div>
 
       {editMode && (
-        <div className="flex justify-center pt-6">
+        <div className="flex justify-center items-center gap-4 pt-6">
           <Button onClick={onAddProject} size="sm">
             <Plus className="h-4 w-4 mr-1" />
             Aggiungi progetto
+          </Button>
+          <Button onClick={onDatabaseManagement} size="sm" variant="ghost" className="text-muted-foreground">
+            <HardDrive className="h-4 w-4 mr-1" />
+            Gestione database
           </Button>
         </div>
       )}

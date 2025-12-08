@@ -1,8 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5080';
 const HEALTH_CHECK_INTERVAL = 5000; // Check every 5 seconds when offline
 const INITIAL_CHECK_TIMEOUT = 3000; // 3 second timeout for initial check
+
+// Get the correct API URL based on environment
+const getApiBaseUrl = (): string => {
+  // In Electron, use the dynamic port from sessionStorage (set by initElectronApi)
+  const serverPort = sessionStorage.getItem('serverPort');
+  if (serverPort) {
+    return `http://localhost:${serverPort}`;
+  }
+  // Fallback for web
+  return import.meta.env.VITE_API_URL || 'http://localhost:5080';
+};
 
 interface ServerHealthState {
   isOnline: boolean;
@@ -24,7 +34,7 @@ export function useServerHealth() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), INITIAL_CHECK_TIMEOUT);
 
-      const response = await fetch(`${API_BASE_URL}/api/projects`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/projects`, {
         method: 'GET',
         signal: controller.signal,
       });

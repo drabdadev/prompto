@@ -21,6 +21,7 @@ import { ProjectColumn } from './ProjectColumn';
 import { EmptyState } from './EmptyState';
 import { ProjectDialog } from '@/components/dialogs/ProjectDialog';
 import { PromptDialog } from '@/components/dialogs/PromptDialog';
+import { DatabaseManagementDialog } from '@/components/dialogs/DatabaseManagementDialog';
 import type { Project, Prompt, PromptType } from '@/types';
 
 export function KanbanBoard() {
@@ -43,7 +44,9 @@ export function KanbanBoard() {
     archivePrompt,
     reorderPrompts,
     getActivePromptsByProject,
+    getActivePromptsByProjectRef, // For drag handler (avoids stale closures)
     getArchivedPromptsByProject,
+    getArchivedPromptsByProjectRef, // For drag handler (avoids stale closures)
   } = usePrompts();
 
   const { isDark, toggle: toggleDarkMode } = useDarkMode();
@@ -57,6 +60,9 @@ export function KanbanBoard() {
 
   // Focus mode - when set, only show this project centered
   const [focusedProjectId, setFocusedProjectId] = useState<string | null>(null);
+
+  // Database management dialog
+  const [databaseDialogOpen, setDatabaseDialogOpen] = useState(false);
 
   // DnD sensors
   const sensors = useSensors(
@@ -73,7 +79,9 @@ export function KanbanBoard() {
     async (event: DragEndEvent) => {
       const { active, over } = event;
 
-      if (!over || active.id === over.id) return;
+      if (!over || active.id === over.id) {
+        return;
+      }
 
       // Check if dragging a column
       const isColumn = projects.some(p => p.id === active.id);
@@ -112,9 +120,17 @@ export function KanbanBoard() {
 
         if (sourceProjectId && targetProjectId) {
           if (sourceProjectId === targetProjectId) {
-            // Reorder within same project
-            const projectPrompts = getActivePromptsByProject(sourceProjectId);
-            const oldIndex = projectPrompts.findIndex(p => p.id === active.id);
+            // Reorder within same project - check both active and archived lists
+            let projectPrompts = getActivePromptsByProjectRef(sourceProjectId);
+
+            // Check if prompt is in active list
+            let oldIndex = projectPrompts.findIndex(p => p.id === active.id);
+            if (oldIndex === -1) {
+              // Not in active, try archived
+              projectPrompts = getArchivedPromptsByProjectRef(sourceProjectId);
+              oldIndex = projectPrompts.findIndex(p => p.id === active.id);
+            }
+
             const newIndex = projectPrompts.findIndex(p => p.id === over.id);
 
             if (oldIndex !== -1 && newIndex !== -1) {
@@ -122,8 +138,8 @@ export function KanbanBoard() {
               reorderPrompts(sourceProjectId, newOrder.map(p => p.id));
             }
           } else {
-            // Move to different project
-            const targetPrompts = getActivePromptsByProject(targetProjectId);
+            // Move to different project - use Ref version to avoid stale closure
+            const targetPrompts = getActivePromptsByProjectRef(targetProjectId);
             const overIndex = targetPrompts.findIndex(p => p.id === over.id);
             const position = overIndex !== -1 ? overIndex : targetPrompts.length;
             await movePrompt(active.id as string, targetProjectId, position);
@@ -131,7 +147,7 @@ export function KanbanBoard() {
         }
       }
     },
-    [projects, reorderProjects, getActivePromptsByProject, reorderPrompts, movePrompt]
+    [projects, reorderProjects, getActivePromptsByProjectRef, getArchivedPromptsByProjectRef, reorderPrompts, movePrompt]
   );
 
   // Project handlers
@@ -215,6 +231,7 @@ export function KanbanBoard() {
         onEditModeChange={setEditMode}
         isDarkMode={isDark}
         onDarkModeToggle={toggleDarkMode}
+        onDatabaseManagement={() => setDatabaseDialogOpen(true)}
       />
 
       {/* Kanban */}
@@ -285,6 +302,11 @@ export function KanbanBoard() {
         onOpenChange={setPromptDialogOpen}
         prompt={editingPrompt}
         onSave={handleSavePrompt}
+      />
+
+      <DatabaseManagementDialog
+        open={databaseDialogOpen}
+        onOpenChange={setDatabaseDialogOpen}
       />
     </div>
   );

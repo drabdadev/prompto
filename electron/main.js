@@ -40,24 +40,29 @@ function findAvailablePort(startPort = 5080) {
 async function startBackendServer() {
   serverPort = await findAvailablePort(5080);
 
-  // Set database path
+  // Set paths based on environment
+  const serverDir = isDev
+    ? path.join(__dirname, '..', 'server')
+    : path.join(process.resourcesPath, 'server');
+
+  // Use separate database files for each environment:
+  // - Web dev: server/data/prompto.db (used by npm run dev)
+  // - Electron dev: server/data/prompto-electron.db (isolated from web)
+  // - Electron prod: ~/Library/Application Support/Prompto/prompto.db
   const dbPath = isDev
-    ? path.join(__dirname, '..', 'server', 'data', 'prompto.db')
+    ? path.join(__dirname, '..', 'server', 'data', 'prompto-electron.db')
     : path.join(app.getPath('userData'), 'prompto.db');
 
   // Set environment variables before requiring server modules
   process.env.PORT = serverPort.toString();
   process.env.DATABASE_PATH = dbPath;
+  process.env.SERVER_DIR = serverDir; // For migrations path in production
   process.env.NODE_ENV = isDev ? 'development' : 'production';
   process.env.ELECTRON = 'true';
 
   console.log(`Starting backend server on port ${serverPort}...`);
   console.log(`Database path: ${dbPath}`);
-
-  // Require server modules
-  const serverDir = isDev
-    ? path.join(__dirname, '..', 'server')
-    : path.join(process.resourcesPath, 'server');
+  console.log(`Server directory: ${serverDir}`);
 
   // In production, add extraResources node_modules to module paths
   if (!isDev) {
@@ -75,6 +80,7 @@ async function startBackendServer() {
   const { initializeDatabase } = require(path.join(serverDir, 'database.js'));
   const projectsRouter = require(path.join(serverDir, 'routes', 'projects.js'));
   const promptsRouter = require(path.join(serverDir, 'routes', 'prompts.js'));
+  const databaseRouter = require(path.join(serverDir, 'routes', 'database.js'));
 
   expressApp = express();
 
@@ -103,6 +109,7 @@ async function startBackendServer() {
         // API routes
         expressApp.use('/api/projects', projectsRouter);
         expressApp.use('/api/prompts', promptsRouter);
+        expressApp.use('/api/database', databaseRouter);
 
         // Serve static files in production
         if (!isDev) {
@@ -171,11 +178,14 @@ function createWindow() {
   if (isDev) {
     // In development, load from Vite dev server
     mainWindow.loadURL(`http://localhost:3080`);
-    // Open DevTools in development
-    mainWindow.webContents.openDevTools();
   } else {
     // In production, load from local server
     mainWindow.loadURL(`http://localhost:${serverPort}`);
+  }
+
+  // Open DevTools only in development
+  if (isDev) {
+    mainWindow.webContents.openDevTools();
   }
 
   mainWindow.on('closed', () => {

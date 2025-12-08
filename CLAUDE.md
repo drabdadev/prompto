@@ -46,7 +46,13 @@ prompto/
 
 ## Database
 
-SQLite database stored at `server/data/prompto.db`
+SQLite databases are environment-specific (completely isolated):
+
+| Environment | Database Path | Command |
+|-------------|---------------|---------|
+| Web dev | `server/data/prompto.db` | `npm run dev` |
+| Electron dev | `server/data/prompto-electron.db` | `npm run electron:dev` |
+| Electron prod | `~/Library/Application Support/Prompto/prompto.db` | Installed app |
 
 ### Tables
 
@@ -81,6 +87,14 @@ SQLite database stored at `server/data/prompto.db`
 - DELETE /api/prompts/:id - Delete
 - PUT /api/prompts/:id/move - Move to project
 
+### Database Management
+- POST /api/database/backup - Create server backup
+- GET /api/database/backups - List backups
+- GET /api/database/backups/:filename - Download backup
+- DELETE /api/database/backups/:filename - Delete backup
+- POST /api/database/restore - Restore from uploaded file
+- GET /api/database/download - Download current database
+
 ## Port Configuration
 
 - Frontend: 3080
@@ -89,12 +103,21 @@ SQLite database stored at `server/data/prompto.db`
 ## Commands
 
 ```bash
-npm run dev           # Run both servers
-npm run server        # Backend only
+# Web Development
+npm run dev           # Run web app (auto-rebuilds native modules)
+npm run server        # Backend only (no rebuild)
 npm run client        # Frontend only
-npm run build         # Build for production
+npm run build         # Build frontend for production
+
+# Electron Development
+npm run electron:dev        # Run Electron (auto-rebuilds native modules)
+npm run electron:build      # Build Electron app for current platform
+npm run electron:build:mac  # Build for macOS
+
 npm run install-all   # Install all deps
 ```
+
+Note: `npm run dev` e `npm run electron:dev` ricompilano automaticamente `better-sqlite3` per la piattaforma corretta, quindi puoi passare da uno all'altro senza problemi.
 
 ## Features
 
@@ -104,3 +127,4 @@ npm run install-all   # Install all deps
 - Filter by prompt type (All/UI/Backend)
 - One-click copy to clipboard
 - Inline edit and delete
+- Database backup/restore (accessible via Edit Mode > "Gestione database")

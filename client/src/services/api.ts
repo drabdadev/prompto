@@ -121,4 +121,51 @@ export const promptsApi = {
   },
 };
 
+// Database API
+export interface Backup {
+  name: string;
+  size: number;
+  createdAt: string;
+}
+
+export const databaseApi = {
+  createBackup: async (): Promise<{ success: boolean; filename: string; size: number; message: string }> => {
+    const { data } = await api.post('/database/backup');
+    return data;
+  },
+
+  listBackups: async (): Promise<{ backups: Backup[] }> => {
+    const { data } = await api.get('/database/backups');
+    return data;
+  },
+
+  downloadBackup: async (filename: string): Promise<Blob> => {
+    const response = await api.get(`/database/backups/${filename}`, {
+      responseType: 'blob'
+    });
+    return response.data;
+  },
+
+  deleteBackup: async (filename: string): Promise<{ success: boolean; message: string }> => {
+    const { data } = await api.delete(`/database/backups/${filename}`);
+    return data;
+  },
+
+  restoreBackup: async (file: File): Promise<{ success: boolean; message: string; preRestoreBackup: string }> => {
+    const formData = new FormData();
+    formData.append('database', file);
+    const { data } = await api.post('/database/restore', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return data;
+  },
+
+  downloadCurrentDatabase: async (): Promise<Blob> => {
+    const response = await api.get('/database/download', {
+      responseType: 'blob'
+    });
+    return response.data;
+  },
+};
+
 export default api;

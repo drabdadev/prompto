@@ -8,6 +8,7 @@ require('dotenv').config();
 const { initializeDatabase } = require('./database');
 const projectsRouter = require('./routes/projects');
 const promptsRouter = require('./routes/prompts');
+const databaseRouter = require('./routes/database');
 const { logger } = require('./config/logger');
 
 const app = express();
@@ -48,6 +49,7 @@ initializeDatabase()
     // API routes
     app.use('/api/projects', projectsRouter);
     app.use('/api/prompts', promptsRouter);
+    app.use('/api/database', databaseRouter);
 
     // Serve static files in production
     if (process.env.NODE_ENV === 'production') {

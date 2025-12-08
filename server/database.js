@@ -5,6 +5,12 @@ const { logger } = require('./config/logger');
 
 const DB_PATH = process.env.DATABASE_PATH || path.join(__dirname, 'data', 'prompto.db');
 
+// In Electron production, migrations are in extraResources
+// SERVER_DIR is set by electron/main.js in production
+const MIGRATIONS_DIR = process.env.SERVER_DIR
+  ? path.join(process.env.SERVER_DIR, 'migrations')
+  : path.join(__dirname, 'migrations');
+
 function initializeDatabase() {
   return new Promise((resolve, reject) => {
     try {
@@ -33,7 +39,7 @@ function initializeDatabase() {
 }
 
 function runMigrations(db) {
-  const migrationsDir = path.join(__dirname, 'migrations');
+  const migrationsDir = MIGRATIONS_DIR;
   const migrationFiles = fs.readdirSync(migrationsDir)
     .filter(f => f.endsWith('.sql'))
     .sort();

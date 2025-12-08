@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { promptsApi } from '@/services/api';
 import type { Prompt, CreatePromptInput, UpdatePromptInput, FilterType } from '@/types';
 
@@ -8,6 +8,24 @@ export function usePrompts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterType>('all');
+
+  // Refs to always have current state in callbacks (avoids stale closures)
+  const activePromptsRef = useRef<Prompt[]>([]);
+  const archivedPromptsRef = useRef<Prompt[]>([]);
+  const filterRef = useRef<FilterType>('all');
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    activePromptsRef.current = activePrompts;
+  }, [activePrompts]);
+
+  useEffect(() => {
+    archivedPromptsRef.current = archivedPrompts;
+  }, [archivedPrompts]);
+
+  useEffect(() => {
+    filterRef.current = filter;
+  }, [filter]);
 
   const fetchPrompts = useCallback(async () => {
     try {
@@ -108,18 +126,36 @@ export function usePrompts() {
 
   const reorderPrompts = useCallback(async (projectId: string, promptIds: string[]) => {
     try {
-      // Optimistically update the order
-      setActivePrompts(prev => {
-        const projectPrompts = prev.filter(p => p.project_id === projectId);
-        const otherPrompts = prev.filter(p => p.project_id !== projectId);
+      // Check if prompts are in active or archived list
+      const firstPromptInActive = activePromptsRef.current.some(p => promptIds.includes(p.id));
 
-        const reordered = promptIds.map((id, index) => {
-          const prompt = projectPrompts.find(p => p.id === id);
-          return prompt ? { ...prompt, position: index } : null;
-        }).filter(Boolean) as Prompt[];
+      if (firstPromptInActive) {
+        // Optimistically update active prompts
+        setActivePrompts(prev => {
+          const projectPrompts = prev.filter(p => p.project_id === projectId);
+          const otherPrompts = prev.filter(p => p.project_id !== projectId);
 
-        return [...otherPrompts, ...reordered];
-      });
+          const reordered = promptIds.map((id, index) => {
+            const prompt = projectPrompts.find(p => p.id === id);
+            return prompt ? { ...prompt, position: index } : null;
+          }).filter(Boolean) as Prompt[];
+
+          return [...otherPrompts, ...reordered];
+        });
+      } else {
+        // Optimistically update archived prompts
+        setArchivedPrompts(prev => {
+          const projectPrompts = prev.filter(p => p.project_id === projectId);
+          const otherPrompts = prev.filter(p => p.project_id !== projectId);
+
+          const reordered = promptIds.map((id, index) => {
+            const prompt = projectPrompts.find(p => p.id === id);
+            return prompt ? { ...prompt, position: index } : null;
+          }).filter(Boolean) as Prompt[];
+
+          return [...otherPrompts, ...reordered];
+        });
+      }
 
       await promptsApi.reorder(projectId, promptIds);
     } catch (err) {
@@ -130,7 +166,7 @@ export function usePrompts() {
     }
   }, [fetchPrompts]);
 
-  // Get active prompts filtered by type for a project
+  // Get active prompts filtered by type for a project (for rendering - uses state)
   const getActivePromptsByProject = useCallback((projectId: string) => {
     return activePrompts
       .filter(p => p.project_id === projectId)
@@ -138,8 +174,17 @@ export function usePrompts() {
       .sort((a, b) => a.position - b.position);
   }, [activePrompts, filter]);
 
-  // Get archived prompts filtered by type for a project
-  // Sort by updated_at DESC so most recently archived appear first
+  // Same but uses refs - for callbacks to avoid stale closures
+  const getActivePromptsByProjectRef = useCallback((projectId: string) => {
+    const prompts = activePromptsRef.current;
+    const currentFilter = filterRef.current;
+    return prompts
+      .filter(p => p.project_id === projectId)
+      .filter(p => currentFilter === 'all' || p.type === currentFilter)
+      .sort((a, b) => a.position - b.position);
+  }, []);
+
+  // Get archived prompts filtered by type for a project (for rendering)
   const getArchivedPromptsByProject = useCallback((projectId: string) => {
     return archivedPrompts
       .filter(p => p.project_id === projectId)
@@ -147,7 +192,17 @@ export function usePrompts() {
       .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
   }, [archivedPrompts, filter]);
 
-  // Get all prompts (active + archived) for a project - used for drag detection
+  // Same but uses refs - for callbacks to avoid stale closures
+  const getArchivedPromptsByProjectRef = useCallback((projectId: string) => {
+    const prompts = archivedPromptsRef.current;
+    const currentFilter = filterRef.current;
+    return prompts
+      .filter(p => p.project_id === projectId)
+      .filter(p => currentFilter === 'all' || p.type === currentFilter)
+      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+  }, []);
+
+  // Get all prompts (active + archived) for a project
   const getAllPromptsByProject = useCallback((projectId: string) => {
     return [...activePrompts, ...archivedPrompts]
       .filter(p => p.project_id === projectId)
@@ -169,7 +224,9 @@ export function usePrompts() {
     archivePrompt,
     reorderPrompts,
     getActivePromptsByProject,
+    getActivePromptsByProjectRef, // For callbacks (avoids stale closures)
     getArchivedPromptsByProject,
+    getArchivedPromptsByProjectRef, // For callbacks (avoids stale closures)
     getAllPromptsByProject,
     refetch: fetchPrompts,
   };
