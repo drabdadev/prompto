@@ -198,7 +198,7 @@ router.post('/restore', upload.single('database'), async (req, res) => {
       return res.status(400).json({ error: 'Invalid SQLite database file' });
     }
 
-    // Create pre-restore backup
+    // Create pre-restore backup BEFORE closing db
     const preRestoreFilename = `pre-restore-${Date.now()}.db`;
     const preRestorePath = path.join(backupsDir, preRestoreFilename);
 
@@ -207,30 +207,51 @@ router.post('/restore', upload.single('database'), async (req, res) => {
 
     logger.info(`Pre-restore backup created: ${preRestoreFilename}`);
 
-    // Copy uploaded file to database location
-    fs.copyFileSync(uploadedPath, currentDbPath);
+    // CLOSE the database connection to release file locks (critical for Windows)
+    db.close();
 
-    // Remove WAL and SHM files to force fresh start
+    // Now we can safely delete WAL and SHM files
     const walPath = currentDbPath + '-wal';
     const shmPath = currentDbPath + '-shm';
-    if (fs.existsSync(walPath)) fs.unlinkSync(walPath);
-    if (fs.existsSync(shmPath)) fs.unlinkSync(shmPath);
+
+    try {
+      if (fs.existsSync(walPath)) fs.unlinkSync(walPath);
+    } catch (e) {
+      logger.warn('Could not delete WAL file:', e.message);
+    }
+    try {
+      if (fs.existsSync(shmPath)) fs.unlinkSync(shmPath);
+    } catch (e) {
+      logger.warn('Could not delete SHM file:', e.message);
+    }
+
+    // Copy uploaded file to database location
+    fs.copyFileSync(uploadedPath, currentDbPath);
 
     // Cleanup uploaded file
     fs.unlinkSync(uploadedPath);
 
-    logger.info('Database restored successfully');
+    // Reinitialize database and update app.locals.db
+    const { initializeDatabase } = require('../database');
+    const newDb = await initializeDatabase();
+    req.app.locals.db = newDb;
+
+    logger.info('Database restored and reinitialized successfully');
 
     res.json({
       success: true,
-      message: 'Database restored. Please restart the application.',
+      message: 'Database restored successfully',
       preRestoreBackup: preRestoreFilename
     });
   } catch (err) {
     logger.error('Restore failed:', err);
     // Cleanup uploaded file on error
     if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (e) {
+        // Ignore cleanup errors
+      }
     }
     res.status(500).json({ error: 'Failed to restore database: ' + err.message });
   }
