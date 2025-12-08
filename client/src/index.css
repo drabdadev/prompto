@@ -56,14 +56,12 @@
     -moz-osx-font-smoothing: grayscale;
   }
   /* Electron-specific: add top padding for macOS traffic lights */
+  html.electron, body.electron, .electron #root {
+    height: 100%;
+    overflow: hidden;
+  }
   body.electron {
     padding-top: 16px;
-    /* Hide scrollbar but allow scrolling */
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE and Edge */
-  }
-  body.electron::-webkit-scrollbar {
-    display: none; /* Chrome, Safari, Opera */
   }
 }
 
@@ -75,9 +73,10 @@
   }
 }
 
-/* Custom scrollbar for kanban board */
+/* Custom scrollbar for kanban board - style horizontal, hide vertical */
 .kanban-scroll::-webkit-scrollbar {
   height: 8px;
+  width: 0; /* Hide vertical scrollbar */
 }
 
 .kanban-scroll::-webkit-scrollbar-track {

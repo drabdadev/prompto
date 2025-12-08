@@ -472,21 +472,19 @@ function createSplashWindow() {
     width: 400,
     height: 300,
     frame: false,
-    transparent: true,
+    resizable: false,
     alwaysOnTop: true,
     skipTaskbar: true,
-    resizable: false,
+    // No transparent - causes issues on Windows
+    backgroundColor: '#1a1a2e',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true
     }
   });
 
-  // Load splash HTML - in production it's in asar, in dev it's in electron folder
-  const splashPath = isDev
-    ? path.join(__dirname, 'splash.html')
-    : path.join(__dirname, 'splash.html');
-
+  // Load splash HTML
+  const splashPath = path.join(__dirname, 'splash.html');
   splashWindow.loadFile(splashPath);
   splashWindow.center();
 }

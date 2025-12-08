@@ -4,11 +4,7 @@
   <meta charset="UTF-8">
   <title>Prompto</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       display: flex;
       justify-content: center;
@@ -22,7 +18,8 @@
       -webkit-app-region: drag;
     }
     .logo {
-      font-size: 64px;
+      width: 96px;
+      height: 96px;
       margin-bottom: 16px;
     }
     .title {
@@ -39,7 +36,7 @@
     .spinner {
       width: 32px;
       height: 32px;
-      border: 3px solid rgba(255,255,255,0.2);
+      border: 3px solid rgba(255, 255, 255, 0.2);
       border-top-color: #3b82f6;
       border-radius: 50%;
       animation: spin 1s linear infinite;
@@ -50,7 +47,7 @@
   </style>
 </head>
 <body>
-  <div class="logo">&#128221;</div>
+  <img class="logo" src="icon.png" alt="Prompto">
   <div class="title">Prompto</div>
   <div class="subtitle">Caricamento...</div>
   <div class="spinner"></div>
