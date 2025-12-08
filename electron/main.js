@@ -93,7 +93,14 @@ function setupAutoUpdater() {
       cancelId: 1
     }).then((result) => {
       if (result.response === 0) {
-        autoUpdater.quitAndInstall();
+        // Force quit and install - required for unsigned apps on macOS
+        setImmediate(() => {
+          app.removeAllListeners('window-all-closed');
+          if (mainWindow) {
+            mainWindow.close();
+          }
+          autoUpdater.quitAndInstall(false, true);
+        });
       }
     });
   });
