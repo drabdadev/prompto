@@ -25,12 +25,11 @@ extraResources:
       - "**/*"
       - "!data/**"
       - "!**/*.log"
-  # Include node_modules but EXCLUDE better-sqlite3 (native module)
+  # Include node_modules (better-sqlite3 included - each platform builds natively)
   - from: node_modules
     to: node_modules
     filter:
       - "**/*"
-      - "!**/better-sqlite3/**"
       - "!**/electron/**"
       - "!**/electron-builder/**"
       - "!**/app-builder-bin/**"
@@ -76,13 +75,7 @@ mac:
   icon: build/icon.icns
   target:
     - target: dmg
-      arch:
-        - x64
-        - arm64
     - target: zip
-      arch:
-        - x64
-        - arm64
   hardenedRuntime: true
   gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist
