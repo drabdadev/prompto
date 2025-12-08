@@ -3,6 +3,17 @@ const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const net = require('net');
 const fs = require('fs');
+const os = require('os');
+
+// Debug logging to temp file
+const logFile = path.join(os.tmpdir(), 'prompto-debug.log');
+function debugLog(msg) {
+  const line = `[${new Date().toISOString()}] ${msg}\n`;
+  try { fs.appendFileSync(logFile, line); } catch (e) {}
+  console.log(msg);
+}
+try { fs.writeFileSync(logFile, `=== Prompto starting ===\nPlatform: ${process.platform}\nArch: ${process.arch}\n`); } catch (e) {}
+debugLog(`Log file: ${logFile}`);
 
 // Performance optimizations for smooth animations
 app.commandLine.appendSwitch('enable-features', 'Metal'); // Enable Metal on macOS
@@ -287,51 +298,56 @@ function findAvailablePort(startPort = 5080) {
  * Start the Express backend server in-process
  */
 async function startBackendServer() {
+  debugLog('startBackendServer() called');
   serverPort = await findAvailablePort(5080);
+  debugLog(`Port: ${serverPort}`);
 
   // Set paths based on environment
   const serverDir = isDev
     ? path.join(__dirname, '..', 'server')
     : path.join(process.resourcesPath, 'server');
 
-  // Use separate database files for each environment:
-  // - Web dev: server/data/prompto.db (used by npm run dev)
-  // - Electron dev: server/data/prompto-electron.db (isolated from web)
-  // - Electron prod: ~/Library/Application Support/Prompto/prompto.db
   const dbPath = isDev
     ? path.join(__dirname, '..', 'server', 'data', 'prompto-electron.db')
     : path.join(app.getPath('userData'), 'prompto.db');
 
+  debugLog(`serverDir: ${serverDir}`);
+  debugLog(`dbPath: ${dbPath}`);
+  debugLog(`resourcesPath: ${process.resourcesPath}`);
+
   // Set environment variables before requiring server modules
   process.env.PORT = serverPort.toString();
   process.env.DATABASE_PATH = dbPath;
-  process.env.SERVER_DIR = serverDir; // For migrations path in production
+  process.env.SERVER_DIR = serverDir;
   process.env.NODE_ENV = isDev ? 'development' : 'production';
   process.env.ELECTRON = 'true';
 
-  // In production, add module paths:
-  // 1. extraResources/node_modules for non-native modules (express, cors, etc.)
-  // 2. app's node_modules for native modules rebuilt by electron-builder (better-sqlite3)
+  // In production, add module paths
   if (!isDev) {
     const extraNodeModules = path.join(process.resourcesPath, 'node_modules');
+    debugLog(`extraNodeModules: ${extraNodeModules}`);
+    debugLog(`extraNodeModules exists: ${fs.existsSync(extraNodeModules)}`);
     require('module').globalPaths.push(extraNodeModules);
-
-    // Also add app's node_modules for rebuilt native modules
-    const appNodeModules = path.join(app.getAppPath(), 'node_modules');
-    require('module').globalPaths.push(appNodeModules);
   }
 
   // Load server dependencies
+  debugLog('Loading express...');
   const express = require('express');
+  debugLog('Loading cors...');
   const cors = require('cors');
+  debugLog('Loading helmet...');
   const helmet = require('helmet');
+  debugLog('Loading compression...');
   const compression = require('compression');
 
   // Load database and routes from server directory
+  debugLog('Loading database.js...');
   const { initializeDatabase } = require(path.join(serverDir, 'database.js'));
+  debugLog('Loading routes...');
   const projectsRouter = require(path.join(serverDir, 'routes', 'projects.js'));
   const promptsRouter = require(path.join(serverDir, 'routes', 'prompts.js'));
   const databaseRouter = require(path.join(serverDir, 'routes', 'database.js'));
+  debugLog('All modules loaded');
 
   expressApp = express();
 
@@ -346,10 +362,11 @@ async function startBackendServer() {
   expressApp.use(express.json());
   expressApp.use(express.urlencoded({ extended: true }));
 
+  debugLog('Initializing database...');
   return new Promise((resolve, reject) => {
     initializeDatabase()
       .then((db) => {
-        // Make db available to routes
+        debugLog('Database initialized OK');
         expressApp.locals.db = db;
 
         // Health check
@@ -378,13 +395,15 @@ async function startBackendServer() {
         });
 
         // Start listening
+        debugLog('Starting HTTP server...');
         httpServer = expressApp.listen(serverPort, () => {
-          console.log(`Server running on port ${serverPort}`);
+          debugLog(`Server running on port ${serverPort}`);
           resolve(serverPort);
         });
       })
       .catch((err) => {
-        console.error('Database init failed:', err);
+        debugLog(`Database init FAILED: ${err.message}`);
+        debugLog(err.stack);
         reject(err);
       });
   });
