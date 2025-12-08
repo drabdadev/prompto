@@ -83,24 +83,22 @@ function setupAutoUpdater() {
 
   autoUpdater.on('update-downloaded', (info) => {
     console.log('Update downloaded:', info.version);
+
     dialog.showMessageBox(mainWindow, {
       type: 'info',
       title: 'Aggiornamento pronto',
-      message: 'L\'aggiornamento è stato scaricato',
-      detail: 'L\'applicazione verrà riavviata per installare l\'aggiornamento.',
+      message: `Prompto v${info.version} è stato scaricato`,
+      detail: 'L\'aggiornamento verrà installato al prossimo avvio.\nVuoi riavviare ora?',
       buttons: ['Riavvia ora', 'Più tardi'],
       defaultId: 0,
       cancelId: 1
     }).then((result) => {
       if (result.response === 0) {
-        // Force quit and install - required for unsigned apps on macOS
-        setImmediate(() => {
-          app.removeAllListeners('window-all-closed');
-          if (mainWindow) {
-            mainWindow.close();
-          }
-          autoUpdater.quitAndInstall(false, true);
-        });
+        // Workaround for M1 Mac bug: use setTimeout + app.exit()
+        // autoInstallOnAppQuit handles the actual installation
+        setTimeout(() => {
+          app.exit(0);
+        }, 100);
       }
     });
   });
