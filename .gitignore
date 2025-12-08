@@ -4,6 +4,7 @@ node_modules/
 # Build
 client/dist/
 dist-electron/
+releases/
 *.tsbuildinfo
 client/vite.config.js
 client/vite.config.d.ts
