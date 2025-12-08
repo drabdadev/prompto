@@ -57,7 +57,13 @@
   }
   /* Electron-specific: add top padding for macOS traffic lights */
   body.electron {
-    padding-top: 28px;
+    padding-top: 16px;
+    /* Hide scrollbar but allow scrolling */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+  body.electron::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
   }
 }
 

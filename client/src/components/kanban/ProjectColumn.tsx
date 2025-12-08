@@ -168,7 +168,7 @@ export function ProjectColumn({
         >
           <div
             ref={setDroppableRef}
-            className={`space-y-2 min-h-[100px] max-h-[calc(100vh-320px)] overflow-y-auto overflow-x-hidden prompts-list p-1 -m-1 rounded-lg transition-colors ${
+            className={`space-y-2 min-h-[100px] p-1 -m-1 rounded-lg transition-colors ${
               isOver ? 'bg-blue-50 dark:bg-blue-950 ring-2 ring-blue-300 dark:ring-blue-700 ring-inset' : ''
             }`}
           >

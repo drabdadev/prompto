@@ -4,6 +4,7 @@ const path = require('path');
 const net = require('net');
 const fs = require('fs');
 const os = require('os');
+const https = require('https');
 
 // Debug logging to temp file
 const logFile = path.join(os.tmpdir(), 'prompto-debug.log');
@@ -23,6 +24,7 @@ app.commandLine.appendSwitch('force_high_performance_gpu'); // Use dedicated GPU
 
 // Keep a global reference of the window object
 let mainWindow = null;
+let splashWindow = null;
 let serverPort = null;
 let expressApp = null;
 let httpServer = null;
@@ -95,59 +97,93 @@ function setupAutoUpdater() {
   autoUpdater.on('update-available', (info) => {
     console.log('Update available:', info.version);
 
-    // Determine DMG filename based on architecture
-    const arch = process.arch === 'arm64' ? 'arm64' : '';
-    const dmgName = arch ? `Prompto-${info.version}-arm64.dmg` : `Prompto-${info.version}.dmg`;
-    const dmgUrl = `https://github.com/drabdadev/prompto/releases/download/v${info.version}/${dmgName}`;
+    if (process.platform === 'darwin') {
+      // macOS: download manuale del DMG (necessario per app non firmate)
+      const arch = process.arch === 'arm64' ? 'arm64' : '';
+      const dmgName = arch ? `Prompto-${info.version}-arm64.dmg` : `Prompto-${info.version}.dmg`;
+      const dmgUrl = `https://github.com/drabdadev/prompto/releases/download/v${info.version}/${dmgName}`;
 
-    dialog.showMessageBox(mainWindow, {
-      type: 'info',
-      title: 'Aggiornamento disponibile',
-      message: `È disponibile Prompto v${info.version}`,
-      detail: 'Vuoi scaricare e installare l\'aggiornamento?\n\nDopo il download, il DMG verrà aperto automaticamente. Trascina Prompto in Applications per aggiornare.',
-      buttons: ['Scarica', 'Più tardi'],
-      defaultId: 0,
-      cancelId: 1
-    }).then(async (result) => {
-      if (result.response === 0) {
-        try {
-          // Show downloading message
-          const downloadPath = path.join(app.getPath('downloads'), dmgName);
+      dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Aggiornamento disponibile',
+        message: `È disponibile Prompto v${info.version}`,
+        detail: 'Vuoi scaricare e installare l\'aggiornamento?\n\nDopo il download, il DMG verrà aperto automaticamente. Trascina Prompto in Applications per aggiornare.',
+        buttons: ['Scarica', 'Più tardi'],
+        defaultId: 0,
+        cancelId: 1
+      }).then(async (result) => {
+        if (result.response === 0) {
+          try {
+            const downloadPath = path.join(app.getPath('downloads'), dmgName);
 
-          dialog.showMessageBox(mainWindow, {
-            type: 'info',
-            title: 'Download in corso',
-            message: 'Download in corso...',
-            detail: `Salvando in: ${downloadPath}`,
-            buttons: ['OK']
-          });
+            dialog.showMessageBox(mainWindow, {
+              type: 'info',
+              title: 'Download in corso',
+              message: 'Download in corso...',
+              detail: `Salvando in: ${downloadPath}`,
+              buttons: ['OK']
+            });
 
-          console.log(`Downloading ${dmgUrl} to ${downloadPath}`);
-          await downloadFile(dmgUrl, downloadPath);
+            console.log(`Downloading ${dmgUrl} to ${downloadPath}`);
+            await downloadFile(dmgUrl, downloadPath);
 
-          // Open the DMG
-          console.log('Opening DMG:', downloadPath);
-          await shell.openPath(downloadPath);
+            console.log('Opening DMG:', downloadPath);
+            await shell.openPath(downloadPath);
 
-          dialog.showMessageBox(mainWindow, {
-            type: 'info',
-            title: 'Aggiornamento scaricato',
-            message: 'Il DMG è stato aperto',
-            detail: 'Trascina Prompto nella cartella Applications per aggiornare.\n\nChiudi questa versione prima di aprire quella nuova.',
-            buttons: ['OK']
-          });
+            dialog.showMessageBox(mainWindow, {
+              type: 'info',
+              title: 'Aggiornamento scaricato',
+              message: 'Il DMG è stato aperto',
+              detail: 'Trascina Prompto nella cartella Applications per aggiornare.\n\nChiudi questa versione prima di aprire quella nuova.',
+              buttons: ['OK']
+            });
 
-        } catch (err) {
-          console.error('Download failed:', err);
-          dialog.showMessageBox(mainWindow, {
-            type: 'error',
-            title: 'Errore download',
-            message: 'Impossibile scaricare l\'aggiornamento',
-            detail: err.message
-          });
+          } catch (err) {
+            console.error('Download failed:', err);
+            dialog.showMessageBox(mainWindow, {
+              type: 'error',
+              title: 'Errore download',
+              message: 'Impossibile scaricare l\'aggiornamento',
+              detail: err.message
+            });
+          }
         }
-      }
-    });
+      });
+    } else {
+      // Windows/Linux: usa electron-updater standard
+      dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Aggiornamento disponibile',
+        message: `È disponibile Prompto v${info.version}`,
+        detail: 'Vuoi scaricare e installare l\'aggiornamento?',
+        buttons: ['Scarica e installa', 'Più tardi'],
+        defaultId: 0,
+        cancelId: 1
+      }).then((result) => {
+        if (result.response === 0) {
+          autoUpdater.downloadUpdate();
+        }
+      });
+    }
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    // Solo per Windows/Linux - macOS usa download manuale
+    if (process.platform !== 'darwin') {
+      dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Aggiornamento pronto',
+        message: `Prompto v${info.version} è stato scaricato`,
+        detail: 'Riavviare ora per installare l\'aggiornamento?',
+        buttons: ['Riavvia ora', 'Più tardi'],
+        defaultId: 0,
+        cancelId: 1
+      }).then((result) => {
+        if (result.response === 0) {
+          autoUpdater.quitAndInstall();
+        }
+      });
+    }
   });
 
   autoUpdater.on('update-not-available', (info) => {
@@ -349,21 +385,6 @@ async function startBackendServer() {
 
   expressApp = express();
 
-  // Log all incoming requests and responses for debugging
-  expressApp.use((req, res, next) => {
-    const startTime = Date.now();
-    const originalUrl = req.originalUrl; // Capture full URL before routers modify it
-    debugLog(`REQUEST: ${req.method} ${originalUrl} from ${req.headers.origin || 'no-origin'}`);
-
-    // Log response when finished
-    res.on('finish', () => {
-      const duration = Date.now() - startTime;
-      debugLog(`RESPONSE: ${req.method} ${originalUrl} -> ${res.statusCode} (${duration}ms)`);
-    });
-
-    next();
-  });
-
   // Security middleware - skip helmet in Electron (not needed for desktop app)
   expressApp.use(compression());
 
@@ -386,23 +407,19 @@ async function startBackendServer() {
           res.json({ status: 'healthy', timestamp: new Date().toISOString() });
         });
 
-        // Debug: verify db is available
-        debugLog(`db available in app.locals: ${!!expressApp.locals.db}`);
+        debugLog(`Database ready in app.locals`);
 
         // Make debugLog available to routes
         expressApp.locals.debugLog = debugLog;
 
-        // Wrap routes with error logging AND intercept res.json for 500 errors
+        // Wrap routes to log only errors (4xx/5xx responses)
         const wrapRouter = (router, name) => {
           return (req, res, next) => {
-            debugLog(`[${name}] Handling ${req.method} ${req.path}`);
-            debugLog(`[${name}] db available: ${!!req.app.locals.db}`);
-
-            // Intercept res.json to log 500 errors
+            // Intercept res.json to log error responses
             const originalJson = res.json.bind(res);
             res.json = (body) => {
               if (res.statusCode >= 400) {
-                debugLog(`[${name}] Response ${res.statusCode}: ${JSON.stringify(body)}`);
+                debugLog(`[${name}] ${req.method} ${req.path} -> ${res.statusCode}: ${JSON.stringify(body)}`);
               }
               return originalJson(body);
             };
@@ -448,6 +465,43 @@ async function startBackendServer() {
 }
 
 /**
+ * Create splash screen window (shows immediately while app loads)
+ */
+function createSplashWindow() {
+  splashWindow = new BrowserWindow({
+    width: 400,
+    height: 300,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true
+    }
+  });
+
+  // Load splash HTML - in production it's in asar, in dev it's in electron folder
+  const splashPath = isDev
+    ? path.join(__dirname, 'splash.html')
+    : path.join(__dirname, 'splash.html');
+
+  splashWindow.loadFile(splashPath);
+  splashWindow.center();
+}
+
+/**
+ * Close splash window
+ */
+function closeSplashWindow() {
+  if (splashWindow) {
+    splashWindow.close();
+    splashWindow = null;
+  }
+}
+
+/**
  * Create the main browser window
  */
 function createWindow() {
@@ -469,8 +523,9 @@ function createWindow() {
     backgroundColor: '#1a1a2e'
   });
 
-  // Show window when ready
+  // Show window when ready and close splash
   mainWindow.once('ready-to-show', () => {
+    closeSplashWindow();
     mainWindow.show();
   });
 
@@ -533,6 +588,9 @@ function setupIpcHandlers() {
  */
 app.whenReady().then(async () => {
   try {
+    // Show splash screen immediately
+    createSplashWindow();
+
     // Setup application menu
     createMenu();
 
@@ -543,13 +601,14 @@ app.whenReady().then(async () => {
     await startBackendServer();
     console.log(`Backend server running on port ${serverPort}`);
 
-    // Create window
+    // Create window (splash will close when window is ready)
     createWindow();
 
     // Setup auto-updater (checks for updates on startup)
     setupAutoUpdater();
   } catch (err) {
     console.error('Failed to start application:', err);
+    closeSplashWindow();
     app.quit();
   }
 

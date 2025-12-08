@@ -21,7 +21,8 @@ async function init() {
   // Initialize Electron API if in Electron environment
   if (isElectron) {
     await initElectronApi();
-    // Add class to body for Electron-specific styling (e.g., traffic lights spacing)
+    // Add class to html and body for Electron-specific styling (e.g., traffic lights spacing, elastic scroll)
+    document.documentElement.classList.add('electron');
     document.body.classList.add('electron');
   }
 
