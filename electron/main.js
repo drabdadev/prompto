@@ -14,6 +14,7 @@ let mainWindow = null;
 let serverPort = null;
 let expressApp = null;
 let httpServer = null;
+let isManualUpdateCheck = false; // Track manual update checks
 
 // Check if we're in development mode
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
@@ -31,6 +32,13 @@ function setupAutoUpdater() {
   // Configure auto-updater
   autoUpdater.autoDownload = false; // Don't download automatically, ask user first
   autoUpdater.autoInstallOnAppQuit = true;
+
+  // Force GitHub provider with explicit configuration
+  autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: 'drabdadev',
+    repo: 'prompto'
+  });
 
   // Event handlers
   autoUpdater.on('checking-for-update', () => {
@@ -56,6 +64,15 @@ function setupAutoUpdater() {
 
   autoUpdater.on('update-not-available', (info) => {
     console.log('No updates available');
+    if (isManualUpdateCheck) {
+      isManualUpdateCheck = false;
+      dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Nessun aggiornamento',
+        message: 'Stai già usando l\'ultima versione di Prompto',
+        detail: `Versione corrente: v${app.getVersion()}`
+      });
+    }
   });
 
   autoUpdater.on('download-progress', (progress) => {
@@ -83,6 +100,15 @@ function setupAutoUpdater() {
 
   autoUpdater.on('error', (err) => {
     console.error('Auto-updater error:', err);
+    if (isManualUpdateCheck) {
+      isManualUpdateCheck = false;
+      dialog.showMessageBox(mainWindow, {
+        type: 'error',
+        title: 'Errore',
+        message: 'Impossibile verificare gli aggiornamenti',
+        detail: err.message
+      });
+    }
   });
 
   // Check for updates after a short delay
@@ -106,21 +132,10 @@ function checkForUpdatesManually() {
     return;
   }
 
-  autoUpdater.checkForUpdates().then((result) => {
-    if (!result || !result.updateInfo) {
-      dialog.showMessageBox(mainWindow, {
-        type: 'info',
-        title: 'Nessun aggiornamento',
-        message: 'Stai già usando l\'ultima versione di Prompto'
-      });
-    }
-  }).catch((err) => {
-    dialog.showMessageBox(mainWindow, {
-      type: 'error',
-      title: 'Errore',
-      message: 'Impossibile verificare gli aggiornamenti',
-      detail: err.message
-    });
+  isManualUpdateCheck = true;
+  autoUpdater.checkForUpdates().catch((err) => {
+    // Error will be handled by the 'error' event
+    console.error('Manual update check failed:', err);
   });
 }
 

@@ -206,7 +206,7 @@ export function DatabaseManagementDialog({ open, onOpenChange }: DatabaseManagem
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <HardDrive className="h-5 w-5" />
-            Gestione Database
+            Gestione DB
           </DialogTitle>
           <DialogDescription>
             Crea backup, ripristina o scarica il database
@@ -233,7 +233,7 @@ export function DatabaseManagementDialog({ open, onOpenChange }: DatabaseManagem
               variant="outline"
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${actionLoading ? 'animate-spin' : ''}`} />
-              Crea Backup sul Server
+              Crea Backup
             </Button>
           </div>
 
@@ -269,7 +269,7 @@ export function DatabaseManagementDialog({ open, onOpenChange }: DatabaseManagem
           {/* Backups List */}
           <div>
             <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
-              Backup sul Server
+              Backup
               <Button
                 onClick={loadBackups}
                 disabled={loading}

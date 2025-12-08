@@ -81,7 +81,7 @@ export function FilterBar({ filter, onFilterChange, onAddProject, editMode, onEd
           </Button>
           <Button onClick={onDatabaseManagement} size="sm" variant="ghost" className="text-muted-foreground">
             <HardDrive className="h-4 w-4 mr-1" />
-            Gestione database
+            Gestione DB
           </Button>
         </div>
       )}
