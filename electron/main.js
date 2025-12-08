@@ -352,12 +352,13 @@ async function startBackendServer() {
   // Log all incoming requests and responses for debugging
   expressApp.use((req, res, next) => {
     const startTime = Date.now();
-    debugLog(`REQUEST: ${req.method} ${req.url} from ${req.headers.origin || 'no-origin'}`);
+    const originalUrl = req.originalUrl; // Capture full URL before routers modify it
+    debugLog(`REQUEST: ${req.method} ${originalUrl} from ${req.headers.origin || 'no-origin'}`);
 
     // Log response when finished
     res.on('finish', () => {
       const duration = Date.now() - startTime;
-      debugLog(`RESPONSE: ${req.method} ${req.url} -> ${res.statusCode} (${duration}ms)`);
+      debugLog(`RESPONSE: ${req.method} ${originalUrl} -> ${res.statusCode} (${duration}ms)`);
     });
 
     next();
@@ -385,10 +386,34 @@ async function startBackendServer() {
           res.json({ status: 'healthy', timestamp: new Date().toISOString() });
         });
 
+        // Debug: verify db is available
+        debugLog(`db available in app.locals: ${!!expressApp.locals.db}`);
+
+        // Wrap routes with error logging
+        const wrapRouter = (router, name) => {
+          return (req, res, next) => {
+            try {
+              debugLog(`[${name}] Handling ${req.method} ${req.path}`);
+              debugLog(`[${name}] db available: ${!!req.app.locals.db}`);
+              router(req, res, (err) => {
+                if (err) {
+                  debugLog(`[${name}] Error: ${err.message}`);
+                  debugLog(err.stack);
+                }
+                next(err);
+              });
+            } catch (err) {
+              debugLog(`[${name}] Sync Error: ${err.message}`);
+              debugLog(err.stack);
+              next(err);
+            }
+          };
+        };
+
         // API routes
-        expressApp.use('/api/projects', projectsRouter);
-        expressApp.use('/api/prompts', promptsRouter);
-        expressApp.use('/api/database', databaseRouter);
+        expressApp.use('/api/projects', wrapRouter(projectsRouter, 'projects'));
+        expressApp.use('/api/prompts', wrapRouter(promptsRouter, 'prompts'));
+        expressApp.use('/api/database', wrapRouter(databaseRouter, 'database'));
 
         // Serve static files in production
         if (!isDev) {
