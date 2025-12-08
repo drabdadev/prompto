@@ -129,10 +129,12 @@ linux:
       arch:
         - x64
 
-# Auto-update disabled for now (requires GitHub repo)
-# publish:
-#   provider: github
-#   releaseType: release
+# Auto-update via GitHub Releases
+publish:
+  provider: github
+  owner: drabdadev
+  repo: prompto
+  releaseType: release
 
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/

@@ -1,4 +1,5 @@
-const { app, BrowserWindow, shell, ipcMain } = require('electron');
+const { app, BrowserWindow, shell, ipcMain, Menu, dialog } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const net = require('net');
 
@@ -16,6 +17,185 @@ let httpServer = null;
 
 // Check if we're in development mode
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+
+/**
+ * Configure and setup auto-updater
+ */
+function setupAutoUpdater() {
+  // Don't check for updates in development
+  if (isDev) {
+    console.log('Auto-updater disabled in development mode');
+    return;
+  }
+
+  // Configure auto-updater
+  autoUpdater.autoDownload = false; // Don't download automatically, ask user first
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  // Event handlers
+  autoUpdater.on('checking-for-update', () => {
+    console.log('Checking for updates...');
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    console.log('Update available:', info.version);
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'Aggiornamento disponibile',
+      message: `È disponibile una nuova versione di Prompto (v${info.version})`,
+      detail: 'Vuoi scaricarla ora?',
+      buttons: ['Scarica', 'Più tardi'],
+      defaultId: 0,
+      cancelId: 1
+    }).then((result) => {
+      if (result.response === 0) {
+        autoUpdater.downloadUpdate();
+      }
+    });
+  });
+
+  autoUpdater.on('update-not-available', (info) => {
+    console.log('No updates available');
+  });
+
+  autoUpdater.on('download-progress', (progress) => {
+    console.log(`Download progress: ${Math.round(progress.percent)}%`);
+    // Could send to renderer for progress bar
+    mainWindow?.webContents.send('update-download-progress', progress.percent);
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    console.log('Update downloaded:', info.version);
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'Aggiornamento pronto',
+      message: 'L\'aggiornamento è stato scaricato',
+      detail: 'L\'applicazione verrà riavviata per installare l\'aggiornamento.',
+      buttons: ['Riavvia ora', 'Più tardi'],
+      defaultId: 0,
+      cancelId: 1
+    }).then((result) => {
+      if (result.response === 0) {
+        autoUpdater.quitAndInstall();
+      }
+    });
+  });
+
+  autoUpdater.on('error', (err) => {
+    console.error('Auto-updater error:', err);
+  });
+
+  // Check for updates after a short delay
+  setTimeout(() => {
+    autoUpdater.checkForUpdates().catch(err => {
+      console.error('Failed to check for updates:', err);
+    });
+  }, 3000);
+}
+
+/**
+ * Check for updates manually (from menu)
+ */
+function checkForUpdatesManually() {
+  if (isDev) {
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'Modalità sviluppo',
+      message: 'Il controllo aggiornamenti non è disponibile in modalità sviluppo'
+    });
+    return;
+  }
+
+  autoUpdater.checkForUpdates().then((result) => {
+    if (!result || !result.updateInfo) {
+      dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Nessun aggiornamento',
+        message: 'Stai già usando l\'ultima versione di Prompto'
+      });
+    }
+  }).catch((err) => {
+    dialog.showMessageBox(mainWindow, {
+      type: 'error',
+      title: 'Errore',
+      message: 'Impossibile verificare gli aggiornamenti',
+      detail: err.message
+    });
+  });
+}
+
+/**
+ * Create application menu
+ */
+function createMenu() {
+  const template = [
+    {
+      label: 'Prompto',
+      submenu: [
+        { label: 'Informazioni su Prompto', role: 'about' },
+        {
+          label: 'Verifica aggiornamenti...',
+          click: () => checkForUpdatesManually()
+        },
+        { type: 'separator' },
+        { label: 'Preferenze...', accelerator: 'CmdOrCtrl+,', enabled: false },
+        { type: 'separator' },
+        { label: 'Servizi', role: 'services' },
+        { type: 'separator' },
+        { label: 'Nascondi Prompto', role: 'hide' },
+        { label: 'Nascondi altri', role: 'hideOthers' },
+        { label: 'Mostra tutti', role: 'unhide' },
+        { type: 'separator' },
+        { label: 'Esci', role: 'quit' }
+      ]
+    },
+    {
+      label: 'Modifica',
+      submenu: [
+        { label: 'Annulla', role: 'undo' },
+        { label: 'Ripeti', role: 'redo' },
+        { type: 'separator' },
+        { label: 'Taglia', role: 'cut' },
+        { label: 'Copia', role: 'copy' },
+        { label: 'Incolla', role: 'paste' },
+        { label: 'Seleziona tutto', role: 'selectAll' }
+      ]
+    },
+    {
+      label: 'Vista',
+      submenu: [
+        { label: 'Ricarica', role: 'reload' },
+        { label: 'Forza ricarica', role: 'forceReload' },
+        { type: 'separator' },
+        { label: 'Dimensione reale', role: 'resetZoom' },
+        { label: 'Ingrandisci', role: 'zoomIn' },
+        { label: 'Riduci', role: 'zoomOut' },
+        { type: 'separator' },
+        { label: 'Schermo intero', role: 'togglefullscreen' }
+      ]
+    },
+    {
+      label: 'Finestra',
+      submenu: [
+        { label: 'Riduci a icona', role: 'minimize' },
+        { label: 'Zoom', role: 'zoom' },
+        { type: 'separator' },
+        { label: 'Chiudi', role: 'close' }
+      ]
+    }
+  ];
+
+  // Add DevTools in development
+  if (isDev) {
+    template[2].submenu.push(
+      { type: 'separator' },
+      { label: 'Strumenti sviluppatore', role: 'toggleDevTools' }
+    );
+  }
+
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+}
 
 /**
  * Find an available port
@@ -157,8 +337,6 @@ function createWindow() {
       backgroundThrottling: false, // Don't throttle animations when in background
       enableWebGL: true, // Enable WebGL for GPU acceleration
     },
-    titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 15, y: 15 },
     show: false, // Don't show until ready
     backgroundColor: '#1a1a2e'
   });
@@ -230,6 +408,9 @@ function setupIpcHandlers() {
  */
 app.whenReady().then(async () => {
   try {
+    // Setup application menu
+    createMenu();
+
     // Setup IPC handlers
     setupIpcHandlers();
 
@@ -239,6 +420,9 @@ app.whenReady().then(async () => {
 
     // Create window
     createWindow();
+
+    // Setup auto-updater (checks for updates on startup)
+    setupAutoUpdater();
   } catch (err) {
     console.error('Failed to start application:', err);
     app.quit();

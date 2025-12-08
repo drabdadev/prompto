@@ -128,3 +128,26 @@ Note: `npm run dev` e `npm run electron:dev` ricompilano automaticamente `better
 - One-click copy to clipboard
 - Inline edit and delete
 - Database backup/restore (accessible via Edit Mode > "Gestione database")
+- **Auto-update** (Electron): verifica automatica aggiornamenti da GitHub Releases
+
+## Auto-Update (Electron)
+
+L'app Electron verifica automaticamente gli aggiornamenti da GitHub Releases.
+
+### Comportamento:
+1. All'avvio, dopo 3 secondi verifica se ci sono aggiornamenti
+2. Se disponibile, mostra dialog per scaricare
+3. Dopo il download, chiede di riavviare per installare
+4. Menu "Prompto > Verifica aggiornamenti..." per check manuale
+
+### Per rilasciare un aggiornamento:
+1. Aggiorna `version` in `package.json` (es. "1.0.1")
+2. Build l'app: `npm run electron:build:mac`
+3. Crea una GitHub Release con tag `v1.0.1`
+4. Upload i file da `dist-electron/`:
+   - `Prompto-1.0.1-arm64.dmg`
+   - `Prompto-1.0.1-arm64-mac.zip`
+   - `latest-mac.yml` (generato automaticamente)
+
+### GitHub Repository:
+- https://github.com/drabdadev/prompto

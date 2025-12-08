@@ -1,6 +1,6 @@
 {
   "name": "prompto",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Prompt management webapp with Kanban UI",
   "main": "electron/main.js",
   "scripts": {
@@ -34,6 +34,7 @@
     "compression": "^1.7.5",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
+    "electron-updater": "^6.6.2",
     "express": "^4.21.2",
     "helmet": "^8.0.0",
     "multer": "^2.0.2",
