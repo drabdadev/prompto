@@ -85,14 +85,14 @@ mac:
 dmg:
   contents:
     - x: 130
-      y: 150
+      y: 120
     - x: 380
-      y: 150
+      y: 120
       type: link
       path: /Applications
   window:
-    width: 512
-    height: 320
+    width: 510
+    height: 280
 
 win:
   icon: build/icon.ico
