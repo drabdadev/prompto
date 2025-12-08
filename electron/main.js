@@ -389,24 +389,25 @@ async function startBackendServer() {
         // Debug: verify db is available
         debugLog(`db available in app.locals: ${!!expressApp.locals.db}`);
 
-        // Wrap routes with error logging
+        // Make debugLog available to routes
+        expressApp.locals.debugLog = debugLog;
+
+        // Wrap routes with error logging AND intercept res.json for 500 errors
         const wrapRouter = (router, name) => {
           return (req, res, next) => {
-            try {
-              debugLog(`[${name}] Handling ${req.method} ${req.path}`);
-              debugLog(`[${name}] db available: ${!!req.app.locals.db}`);
-              router(req, res, (err) => {
-                if (err) {
-                  debugLog(`[${name}] Error: ${err.message}`);
-                  debugLog(err.stack);
-                }
-                next(err);
-              });
-            } catch (err) {
-              debugLog(`[${name}] Sync Error: ${err.message}`);
-              debugLog(err.stack);
-              next(err);
-            }
+            debugLog(`[${name}] Handling ${req.method} ${req.path}`);
+            debugLog(`[${name}] db available: ${!!req.app.locals.db}`);
+
+            // Intercept res.json to log 500 errors
+            const originalJson = res.json.bind(res);
+            res.json = (body) => {
+              if (res.statusCode >= 400) {
+                debugLog(`[${name}] Response ${res.statusCode}: ${JSON.stringify(body)}`);
+              }
+              return originalJson(body);
+            };
+
+            router(req, res, next);
           };
         };
 

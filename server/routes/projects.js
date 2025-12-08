@@ -15,7 +15,9 @@ router.get('/', (req, res) => {
     res.json(projects);
   } catch (err) {
     logger.error('Error fetching projects:', err);
-    res.status(500).json({ error: 'Failed to fetch projects' });
+    // Include actual error for debugging in Electron
+    const errorDetail = process.env.ELECTRON ? err.message : 'Failed to fetch projects';
+    res.status(500).json({ error: errorDetail, stack: process.env.ELECTRON ? err.stack : undefined });
   }
 });
 
