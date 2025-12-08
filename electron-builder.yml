@@ -25,11 +25,12 @@ extraResources:
       - "**/*"
       - "!data/**"
       - "!**/*.log"
-  # Include all node_modules except dev dependencies and large build tools
+  # Include node_modules but EXCLUDE better-sqlite3 (native module)
   - from: node_modules
     to: node_modules
     filter:
       - "**/*"
+      - "!**/better-sqlite3/**"
       - "!**/electron/**"
       - "!**/electron-builder/**"
       - "!**/app-builder-bin/**"

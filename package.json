@@ -1,6 +1,6 @@
 {
   "name": "prompto",
-  "version": "0.1.4",
+  "version": "0.1.7",
   "description": "Prompt management webapp with Kanban UI",
   "main": "electron/main.js",
   "scripts": {

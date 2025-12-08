@@ -3,7 +3,6 @@ const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const net = require('net');
 const fs = require('fs');
-const https = require('https');
 
 // Performance optimizations for smooth animations
 app.commandLine.appendSwitch('enable-features', 'Metal'); // Enable Metal on macOS
@@ -310,14 +309,16 @@ async function startBackendServer() {
   process.env.NODE_ENV = isDev ? 'development' : 'production';
   process.env.ELECTRON = 'true';
 
-  console.log(`Starting backend server on port ${serverPort}...`);
-  console.log(`Database path: ${dbPath}`);
-  console.log(`Server directory: ${serverDir}`);
-
-  // In production, add extraResources node_modules to module paths
+  // In production, add module paths:
+  // 1. extraResources/node_modules for non-native modules (express, cors, etc.)
+  // 2. app's node_modules for native modules rebuilt by electron-builder (better-sqlite3)
   if (!isDev) {
     const extraNodeModules = path.join(process.resourcesPath, 'node_modules');
     require('module').globalPaths.push(extraNodeModules);
+
+    // Also add app's node_modules for rebuilt native modules
+    const appNodeModules = path.join(app.getAppPath(), 'node_modules');
+    require('module').globalPaths.push(appNodeModules);
   }
 
   // Load server dependencies
@@ -378,12 +379,12 @@ async function startBackendServer() {
 
         // Start listening
         httpServer = expressApp.listen(serverPort, () => {
-          console.log(`Prompto server running on port ${serverPort}`);
+          console.log(`Server running on port ${serverPort}`);
           resolve(serverPort);
         });
       })
       .catch((err) => {
-        console.error('Failed to initialize database:', err);
+        console.error('Database init failed:', err);
         reject(err);
       });
   });
