@@ -349,8 +349,13 @@ async function startBackendServer() {
 
   expressApp = express();
 
+  // Log all incoming requests for debugging
+  expressApp.use((req, res, next) => {
+    debugLog(`REQUEST: ${req.method} ${req.url} from ${req.headers.origin || 'no-origin'}`);
+    next();
+  });
+
   // Security middleware - skip helmet in Electron (not needed for desktop app)
-  // Helmet's CSP can block fetch requests in Electron renderer
   expressApp.use(compression());
 
   // CORS - allow all in Electron
@@ -441,13 +446,10 @@ function createWindow() {
   });
 
   // Load the app
-  if (isDev) {
-    // In development, load from Vite dev server
-    mainWindow.loadURL(`http://localhost:3080`);
-  } else {
-    // In production, load from local server
-    mainWindow.loadURL(`http://localhost:${serverPort}`);
-  }
+  const appUrl = isDev ? `http://localhost:3080` : `http://localhost:${serverPort}`;
+  debugLog(`Loading window URL: ${appUrl}`);
+  debugLog(`Preload path: ${path.join(__dirname, 'preload.js')}`);
+  mainWindow.loadURL(appUrl);
 
   // Open DevTools only in development
   if (isDev) {

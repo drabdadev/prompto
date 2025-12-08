@@ -30,6 +30,7 @@ extraResources:
     to: node_modules
     filter:
       - "**/*"
+      - "!**/.bin/**"
       - "!**/electron/**"
       - "!**/electron-builder/**"
       - "!**/app-builder-bin/**"
