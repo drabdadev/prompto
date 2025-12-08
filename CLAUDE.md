@@ -151,3 +151,56 @@ L'app Electron verifica automaticamente gli aggiornamenti da GitHub Releases.
 
 ### GitHub Repository:
 - https://github.com/drabdadev/prompto
+
+## Known Issues & Learnings (Electron)
+
+### 1. Splash Screen su Windows
+`transparent: true` in BrowserWindow non funziona su Windows. Usare `backgroundColor` con colore solido:
+```javascript
+splashWindow = new BrowserWindow({
+  frame: false,
+  backgroundColor: '#1a1a2e',  // NON transparent: true
+  // ...
+});
+```
+
+### 2. better-sqlite3 NODE_MODULE_VERSION Mismatch
+**Errore**: "NODE_MODULE_VERSION 131 vs 140" al primo avvio.
+**Causa**: Il modulo nativo è compilato per Node.js locale, non Electron.
+**Soluzione**: Eseguire `npx electron-rebuild -f -w better-sqlite3` prima di `electron-builder`.
+Lo script `electron:build:mac` include già electron-rebuild, ma a volte serve forzarlo:
+```bash
+npx electron-rebuild -f -w better-sqlite3 && npm run electron:build:mac
+```
+
+### 3. DMG Layout Standard
+Per evitare layout incasinati (spazio vuoto, scroll), usare i valori standard:
+```yaml
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+  window:
+    width: 540
+    height: 380
+```
+Fonte: https://www.electron.build/dmg.html
+
+### 4. CSS Height Chain per Electron
+Per evitare scroll verticale inutile, serve catena completa di height:
+```css
+html.electron, body.electron, .electron #root {
+  height: 100%;
+  overflow: hidden;
+}
+```
+E usare `h-full` invece di `min-h-screen` nei componenti React.
+
+### 5. Auto-Update per Piattaforma
+- **Windows/Linux**: `autoUpdater.downloadUpdate()` standard funziona anche per app non firmate
+- **macOS**: Download manuale del DMG necessario (app non firmata)
+- **Bug M1 Mac**: Usare `app.exit(0)` invece di `autoUpdater.quitAndInstall()` (bug Electron #41888)
