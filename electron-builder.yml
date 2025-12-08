@@ -117,6 +117,10 @@ nsis:
   installerHeaderIcon: build/icon.ico
   createDesktopShortcut: true
   createStartMenuShortcut: true
+  artifactName: "${productName}-Setup-${version}.${ext}"
+
+portable:
+  artifactName: "${productName}-${version}-portable.${ext}"
 
 linux:
   icon: build/icons
