@@ -335,8 +335,6 @@ async function startBackendServer() {
   const express = require('express');
   debugLog('Loading cors...');
   const cors = require('cors');
-  debugLog('Loading helmet...');
-  const helmet = require('helmet');
   debugLog('Loading compression...');
   const compression = require('compression');
 
@@ -351,8 +349,8 @@ async function startBackendServer() {
 
   expressApp = express();
 
-  // Security middleware
-  expressApp.use(helmet());
+  // Security middleware - skip helmet in Electron (not needed for desktop app)
+  // Helmet's CSP can block fetch requests in Electron renderer
   expressApp.use(compression());
 
   // CORS - allow all in Electron
