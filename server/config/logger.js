@@ -18,9 +18,15 @@ const logger = winston.createLogger({
   ]
 });
 
-// Add file transport in production
-if (process.env.NODE_ENV === 'production') {
+// Add file transport in production (skip in Electron - uses console only)
+if (process.env.NODE_ENV === 'production' && !process.env.ELECTRON) {
+  const fs = require('fs');
   const logsDir = path.join(__dirname, '../../logs');
+
+  // Ensure logs directory exists
+  if (!fs.existsSync(logsDir)) {
+    fs.mkdirSync(logsDir, { recursive: true });
+  }
 
   logger.add(new winston.transports.File({
     filename: path.join(logsDir, 'error.log'),

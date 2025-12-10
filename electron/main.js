@@ -364,6 +364,12 @@ async function startBackendServer() {
     debugLog(`extraNodeModules: ${extraNodeModules}`);
     debugLog(`extraNodeModules exists: ${fs.existsSync(extraNodeModules)}`);
     require('module').globalPaths.push(extraNodeModules);
+
+    // Set path for better-sqlite3 (native module in app.asar.unpacked)
+    const betterSqlite3Path = path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'better-sqlite3');
+    debugLog(`betterSqlite3Path: ${betterSqlite3Path}`);
+    debugLog(`betterSqlite3Path exists: ${fs.existsSync(betterSqlite3Path)}`);
+    process.env.BETTER_SQLITE3_PATH = betterSqlite3Path;
   }
 
   // Load server dependencies

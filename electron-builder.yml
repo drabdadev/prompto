@@ -25,11 +25,12 @@ extraResources:
       - "**/*"
       - "!data/**"
       - "!**/*.log"
-  # Include node_modules (better-sqlite3 included - each platform builds natively)
+  # Include node_modules (better-sqlite3 EXCLUDED - rebuilt by electron-builder for each platform)
   - from: node_modules
     to: node_modules
     filter:
       - "**/*"
+      - "!**/better-sqlite3/**"
       - "!**/.bin/**"
       - "!**/electron/**"
       - "!**/electron-builder/**"
@@ -70,6 +71,7 @@ asarUnpack:
   - "**/better-sqlite3/**"
 
 npmRebuild: true
+buildDependenciesFromSource: true
 
 mac:
   category: public.app-category.productivity

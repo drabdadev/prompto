@@ -1,6 +1,15 @@
-const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
+
+// In Electron production, better-sqlite3 is in app.asar.unpacked
+// BETTER_SQLITE3_PATH is set by electron/main.js
+let Database;
+if (process.env.BETTER_SQLITE3_PATH) {
+  Database = require(process.env.BETTER_SQLITE3_PATH);
+} else {
+  Database = require('better-sqlite3');
+}
+
 const { logger } = require('./config/logger');
 
 const DB_PATH = process.env.DATABASE_PATH || path.join(__dirname, 'data', 'prompto.db');
