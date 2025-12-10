@@ -268,7 +268,7 @@ export function PromptCard({ prompt, projectId, onDelete, onArchive, onUpdate, s
         <p
           className="text-sm text-card-foreground whitespace-pre-wrap break-words cursor-text hover:bg-muted rounded p-1 -m-1 mb-2"
           onClick={handleTextClick}
-          title="Click to edit"
+          title="Clicca per modificare"
         >
           {prompt.content}
         </p>
@@ -282,7 +282,7 @@ export function PromptCard({ prompt, projectId, onDelete, onArchive, onUpdate, s
             size="icon"
             className={`h-7 w-7 transition-colors ${copied ? 'text-green-600' : ''}`}
             onClick={handleCopy}
-            title="Copy prompt"
+            title="Copia prompt"
           >
             {copied ? (
               <Check className="h-3.5 w-3.5" />
@@ -295,7 +295,7 @@ export function PromptCard({ prompt, projectId, onDelete, onArchive, onUpdate, s
             size="icon"
             className={`h-7 w-7 ${showArchived ? 'text-blue-600 hover:text-blue-700' : 'text-green-600 hover:text-green-700'}`}
             onClick={handleArchive}
-            title={showArchived ? "Restore prompt" : "Mark as done"}
+            title={showArchived ? "Ripristina" : "Archivia"}
           >
             {showArchived ? (
               <RotateCcw className="h-3.5 w-3.5" />
@@ -308,7 +308,7 @@ export function PromptCard({ prompt, projectId, onDelete, onArchive, onUpdate, s
             size="icon"
             className="h-7 w-7 text-destructive hover:text-destructive"
             onClick={handleDeleteClick}
-            title="Delete prompt"
+            title="Elimina prompt"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </Button>

@@ -215,7 +215,7 @@ export function ProjectColumn({
           >
             {prompts.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
-                {isArchiveView ? 'No archived prompts' : 'Nessun prompt qui...'}
+                {isArchiveView ? 'Nessun prompt archiviato' : 'Nessun prompt qui...'}
               </div>
             ) : (
               prompts.map((prompt) => (
@@ -363,7 +363,7 @@ export function ProjectColumn({
                 checked={showArchived}
                 onCheckedChange={handleFlipToggle}
                 disabled={isFlipping}
-                aria-label={showArchived ? "Show active prompts" : "Show archived prompts"}
+                aria-label={showArchived ? "Mostra prompt attivi" : "Mostra prompt archiviati"}
               />
             </div>
           </div>

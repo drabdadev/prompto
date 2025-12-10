@@ -207,7 +207,7 @@ export function KanbanBoard() {
   };
 
   const handleDeleteProject = async (id: string) => {
-    if (window.confirm('Delete this project and all its prompts?')) {
+    if (window.confirm('Eliminare questo progetto e tutti i suoi prompt?')) {
       await deleteProject(id);
     }
   };
@@ -253,7 +253,7 @@ export function KanbanBoard() {
   if (projectsLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
-        <div className="text-muted-foreground">Loading...</div>
+        <div className="text-muted-foreground">Caricamento...</div>
       </div>
     );
   }
@@ -275,7 +275,7 @@ export function KanbanBoard() {
               <TooltipTrigger asChild>
                 <button
                   className="p-1.5 rounded-md hover:bg-muted transition-colors"
-                  aria-label="Keyboard shortcuts"
+                  aria-label="Scorciatoie da tastiera"
                 >
                   <HelpCircle className="h-4 w-4 text-muted-foreground" />
                 </button>
@@ -299,7 +299,7 @@ export function KanbanBoard() {
           <button
             onClick={toggleDarkMode}
             className="p-1.5 rounded-md hover:bg-muted transition-colors"
-            aria-label="Toggle dark mode"
+            aria-label="Cambia tema"
           >
             {isDark ? (
               <Sun className="h-4 w-4 text-muted-foreground" />
@@ -313,7 +313,7 @@ export function KanbanBoard() {
             <Switch
               checked={editMode}
               onCheckedChange={setEditMode}
-              aria-label="Toggle edit mode"
+              aria-label="Modalità modifica"
             />
           </div>
         </div>

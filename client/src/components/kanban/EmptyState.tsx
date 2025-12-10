@@ -12,15 +12,15 @@ export function EmptyState({ onAddProject }: EmptyStateProps) {
         <FolderPlus className="h-8 w-8 text-muted-foreground" />
       </div>
       <h2 className="text-xl font-semibold text-foreground mb-2">
-        No projects yet
+        Nessun progetto
       </h2>
       <p className="text-muted-foreground mb-6 max-w-md">
-        Create your first project to start organizing your AI prompts.
-        Each project becomes a column in your Kanban board.
+        Crea il tuo primo progetto per organizzare i prompt AI.
+        Ogni progetto diventa una colonna nella tua Kanban board.
       </p>
       <Button onClick={onAddProject}>
         <FolderPlus className="h-4 w-4 mr-2" />
-        Create First Project
+        Crea il primo progetto
       </Button>
     </div>
   );

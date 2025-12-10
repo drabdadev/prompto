@@ -68,26 +68,26 @@ export function ProjectDialog({
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>
-              {project ? 'Edit Project' : 'New Project'}
+              {project ? 'Modifica Progetto' : 'Nuovo Progetto'}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <label htmlFor="name" className="text-sm font-medium">
-                Project Name
+                Nome Progetto
               </label>
               <Input
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Enter project name"
+                placeholder="Inserisci il nome del progetto"
                 autoFocus
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Color</label>
+              <label className="text-sm font-medium">Colore</label>
               <div className="flex gap-2 flex-wrap">
                 {PRESET_COLORS.map((presetColor) => (
                   <button
@@ -112,10 +112,10 @@ export function ProjectDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              Annulla
             </Button>
             <Button type="submit" disabled={!name.trim() || isSubmitting}>
-              {project ? 'Save' : 'Create'}
+              {project ? 'Salva' : 'Crea'}
             </Button>
           </DialogFooter>
         </form>
