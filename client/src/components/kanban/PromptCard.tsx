@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Copy, Trash2, Layout, Server, Check, RotateCcw, GripHorizontal, AlertTriangle } from 'lucide-react';
+import { Copy, Trash2, Layout, Server, RotateCcw, GripHorizontal, AlertTriangle, Archive, Check } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -60,14 +60,18 @@ export function PromptCard({ prompt, projectId, onDelete, onArchive, onUpdate, s
     }
   };
 
-  // Focus textarea when entering edit mode and adjust height
+  // Focus textarea when entering edit mode and position cursor at end
   useEffect(() => {
     if (isEditing && textareaRef.current) {
       textareaRef.current.focus();
-      textareaRef.current.setSelectionRange(editContent.length, editContent.length);
+      // Position cursor at the end only when first entering edit mode
+      const len = textareaRef.current.value.length;
+      textareaRef.current.setSelectionRange(len, len);
       adjustTextareaHeight();
     }
-  }, [isEditing, editContent.length]);
+    // Only run when isEditing changes, not on content changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditing]);
 
   // Adjust height when content changes during editing
   useEffect(() => {
@@ -147,28 +151,56 @@ export function PromptCard({ prompt, projectId, onDelete, onArchive, onUpdate, s
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isConfirmingDelete, confirmDelete, cancelDelete]);
 
-  // Handle Delete key shortcut when hovering over card (not editing)
+  // Handle keyboard shortcuts when hovering over card (not editing)
   useEffect(() => {
     if (!isHovered || isEditing || isConfirmingDelete) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        // Don't trigger if user is typing in any input/textarea
-        const activeElement = document.activeElement;
-        const isTyping = activeElement instanceof HTMLInputElement ||
-                        activeElement instanceof HTMLTextAreaElement ||
-                        activeElement?.getAttribute('contenteditable') === 'true';
+      // Don't trigger if user is typing in any input/textarea
+      const activeElement = document.activeElement;
+      const isTyping = activeElement instanceof HTMLInputElement ||
+                      activeElement instanceof HTMLTextAreaElement ||
+                      activeElement?.getAttribute('contenteditable') === 'true';
 
-        if (!isTyping) {
-          e.preventDefault();
-          setIsConfirmingDelete(true);
+      if (isTyping) return;
+
+      // Delete/Backspace: show delete confirmation
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        setIsConfirmingDelete(true);
+      }
+      // E: edit the prompt
+      else if (e.key === 'e' || e.key === 'E') {
+        e.preventDefault();
+        setEditContent(prompt.content);
+        setIsEditing(true);
+      }
+      // A: archive/restore the prompt
+      else if (e.key === 'a' || e.key === 'A') {
+        e.preventDefault();
+        if (!isArchiving) {
+          setIsArchiving(true);
+          setTimeout(() => {
+            onArchive(prompt.id, !showArchived);
+            setIsArchiving(false);
+          }, 500);
         }
+      }
+      // C: copy the prompt
+      else if (e.key === 'c' || e.key === 'C') {
+        e.preventDefault();
+        copy(prompt.content).then((success) => {
+          if (success) {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          }
+        });
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isHovered, isEditing, isConfirmingDelete]);
+  }, [isHovered, isEditing, isConfirmingDelete, isArchiving, prompt.content, prompt.id, showArchived, onArchive, copy]);
 
   const handleArchive = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -192,11 +224,13 @@ export function PromptCard({ prompt, projectId, onDelete, onArchive, onUpdate, s
 
   // Build className - avoid transition-all during drag for performance
   const cardClassName = [
-    'p-3 bg-card group relative',
+    'p-3 bg-card group relative transition-all duration-150',
     isArchiving && 'prompt-card archive-animation',
     isEditing && 'border-blue-500 dark:border-blue-400 shadow-[0_0_0_3px_rgba(59,130,246,0.3),0_4px_12px_0_rgba(59,130,246,0.15)] dark:shadow-[0_0_0_3px_rgba(59,130,246,0.4),0_4px_12px_0_rgba(59,130,246,0.2)]',
     isDragging && 'shadow-xl z-50 cursor-grabbing',
-    !isDragging && !isEditing && !isArchiving && !isConfirmingDelete && 'transition-shadow duration-150 hover:shadow-lg cursor-grab',
+    !isDragging && !isEditing && !isArchiving && !isConfirmingDelete && 'hover:shadow-lg cursor-grab',
+    // Subtle border glow on hover to indicate keyboard shortcuts are available
+    isHovered && !isEditing && !isDragging && !isConfirmingDelete && 'ring-2 ring-blue-400/40 dark:ring-blue-500/40',
   ].filter(Boolean).join(' ');
 
   return (
@@ -266,7 +300,7 @@ export function PromptCard({ prompt, projectId, onDelete, onArchive, onUpdate, s
             {showArchived ? (
               <RotateCcw className="h-3.5 w-3.5" />
             ) : (
-              <Check className="h-3.5 w-3.5" />
+              <Archive className="h-3.5 w-3.5" />
             )}
           </Button>
           <Button

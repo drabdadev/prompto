@@ -31,22 +31,24 @@ router.post('/', (req, res) => {
       return res.status(400).json({ error: 'Project name is required' });
     }
 
-    // Get max position
-    const maxPos = db.prepare('SELECT MAX(position) as maxPos FROM projects').get();
-    const position = (maxPos.maxPos ?? -1) + 1;
-
     const id = uuidv4();
     const project = {
       id,
       name: name.trim(),
       color: color || '#3B82F6',
-      position
+      position: 0
     };
 
-    db.prepare(`
-      INSERT INTO projects (id, name, color, position)
-      VALUES (@id, @name, @color, @position)
-    `).run(project);
+    // Inserisci il nuovo progetto in posizione 0 e sposta gli altri
+    db.transaction(() => {
+      // Sposta tutti i progetti esistenti di 1 posizione
+      db.prepare('UPDATE projects SET position = position + 1').run();
+      // Inserisci il nuovo progetto in posizione 0
+      db.prepare(`
+        INSERT INTO projects (id, name, color, position)
+        VALUES (@id, @name, @color, @position)
+      `).run(project);
+    })();
 
     const created = db.prepare('SELECT * FROM projects WHERE id = ?').get(id);
     res.status(201).json(created);

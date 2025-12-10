@@ -1,7 +1,8 @@
-import { Plus, Layout, Server, Layers, Settings, Sun, Moon, HardDrive } from 'lucide-react';
+import { Plus, Layout, Server, Layers, Settings, Sun, Moon, HardDrive, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { FilterType } from '@/types';
 
 interface FilterBarProps {
@@ -51,6 +52,32 @@ export function FilterBar({ filter, onFilterChange, onAddProject, editMode, onEd
       </div>
 
       <div className="flex items-center gap-3">
+        {/* Help icon with keyboard shortcuts tooltip */}
+        <TooltipProvider delayDuration={200}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                className="p-1.5 rounded-md hover:bg-muted transition-colors"
+                aria-label="Keyboard shortcuts"
+              >
+                <HelpCircle className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-xs p-3 text-left">
+              <p className="font-medium mb-2">Scorciatoie da tastiera</p>
+              <div className="space-y-1.5 text-xs">
+                <p><kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] font-mono">E</kbd> Modifica prompt</p>
+                <p><kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] font-mono">A</kbd> Archivia / Ripristina</p>
+                <p><kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] font-mono">C</kbd> Copia prompt</p>
+                <p><kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] font-mono">Canc</kbd> Elimina prompt</p>
+              </div>
+              <p className="text-[10px] text-gray-500 mt-2 pt-2 border-t border-gray-200">
+                Passa il mouse su un prompt per attivare le scorciatoie
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
         <button
           onClick={onDarkModeToggle}
           className="p-1.5 rounded-md hover:bg-muted transition-colors"
