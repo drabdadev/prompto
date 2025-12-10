@@ -166,11 +166,11 @@ export function usePrompts() {
     }
   }, [fetchPrompts]);
 
-  // Get active prompts filtered by type for a project (for rendering - uses state)
+  // Get active prompts filtered by category for a project (for rendering - uses state)
   const getActivePromptsByProject = useCallback((projectId: string) => {
     return activePrompts
       .filter(p => p.project_id === projectId)
-      .filter(p => filter === 'all' || p.type === filter)
+      .filter(p => filter === 'all' || p.category_id === filter)
       .sort((a, b) => a.position - b.position);
   }, [activePrompts, filter]);
 
@@ -180,15 +180,15 @@ export function usePrompts() {
     const currentFilter = filterRef.current;
     return prompts
       .filter(p => p.project_id === projectId)
-      .filter(p => currentFilter === 'all' || p.type === currentFilter)
+      .filter(p => currentFilter === 'all' || p.category_id === currentFilter)
       .sort((a, b) => a.position - b.position);
   }, []);
 
-  // Get archived prompts filtered by type for a project (for rendering)
+  // Get archived prompts filtered by category for a project (for rendering)
   const getArchivedPromptsByProject = useCallback((projectId: string) => {
     return archivedPrompts
       .filter(p => p.project_id === projectId)
-      .filter(p => filter === 'all' || p.type === filter)
+      .filter(p => filter === 'all' || p.category_id === filter)
       .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
   }, [archivedPrompts, filter]);
 
@@ -198,7 +198,7 @@ export function usePrompts() {
     const currentFilter = filterRef.current;
     return prompts
       .filter(p => p.project_id === projectId)
-      .filter(p => currentFilter === 'all' || p.type === currentFilter)
+      .filter(p => currentFilter === 'all' || p.category_id === currentFilter)
       .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
   }, []);
 
@@ -206,7 +206,7 @@ export function usePrompts() {
   const getAllPromptsByProject = useCallback((projectId: string) => {
     return [...activePrompts, ...archivedPrompts]
       .filter(p => p.project_id === projectId)
-      .filter(p => filter === 'all' || p.type === filter)
+      .filter(p => filter === 'all' || p.category_id === filter)
       .sort((a, b) => a.position - b.position);
   }, [activePrompts, archivedPrompts, filter]);
 

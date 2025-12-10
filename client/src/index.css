@@ -270,3 +270,53 @@
     display: none;
   }
 }
+
+/* Focus Mode - Implode animation for non-focused columns */
+@keyframes implodeOut {
+  0% {
+    transform: scale(1) translateX(0);
+    opacity: 1;
+    filter: blur(0);
+  }
+  30% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(0) translateX(var(--implode-direction, 0));
+    opacity: 0;
+    filter: blur(8px);
+    pointer-events: none;
+  }
+}
+
+@keyframes implodeIn {
+  0% {
+    transform: scale(0) translateX(var(--implode-direction, 0));
+    opacity: 0;
+    filter: blur(8px);
+  }
+  70% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1) translateX(0);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+.column-implode-out {
+  animation: implodeOut 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  pointer-events: none;
+}
+
+.column-implode-in {
+  animation: implodeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Hide columns after implode animation completes */
+.column-imploded {
+  display: none;
+}

@@ -68,12 +68,22 @@ function runMigrations(db) {
     if (!appliedMigrations.includes(file)) {
       const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
 
-      db.transaction(() => {
-        db.exec(sql);
-        db.prepare('INSERT INTO migrations (name) VALUES (?)').run(file);
-      })();
+      try {
+        db.transaction(() => {
+          db.exec(sql);
+          db.prepare('INSERT INTO migrations (name) VALUES (?)').run(file);
+        })();
 
-      logger.info(`Applied migration: ${file}`);
+        logger.info(`Applied migration: ${file}`);
+      } catch (err) {
+        // Handle "duplicate column" errors gracefully (ALTER TABLE idempotency)
+        if (err.message && err.message.includes('duplicate column')) {
+          logger.info(`Migration ${file}: column already exists, marking as applied`);
+          db.prepare('INSERT INTO migrations (name) VALUES (?)').run(file);
+        } else {
+          throw err;
+        }
+      }
     }
   }
 }

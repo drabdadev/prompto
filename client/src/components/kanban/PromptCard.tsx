@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Copy, Trash2, Layout, Server, RotateCcw, GripHorizontal, AlertTriangle, Archive, Check } from 'lucide-react';
+import { Copy, Trash2, RotateCcw, GripHorizontal, AlertTriangle, Archive, Check } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { DynamicIcon } from '@/components/DynamicIcon';
 import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
-import type { Prompt, PromptType } from '@/types';
+import type { Prompt, Category } from '@/types';
 
 interface PromptCardProps {
   prompt: Prompt;
@@ -14,11 +15,13 @@ interface PromptCardProps {
   onEdit: (prompt: Prompt) => void;
   onDelete: (id: string) => void;
   onArchive: (id: string, archived: boolean) => void;
-  onUpdate: (id: string, content: string, type: PromptType) => void;
+  onUpdate: (id: string, content: string, categoryId: string | null) => void;
   showArchived: boolean;
+  categoriesVisible: boolean;
+  getCategoryById: (id: string | null) => Category | undefined;
 }
 
-export function PromptCard({ prompt, projectId, onDelete, onArchive, onUpdate, showArchived }: PromptCardProps) {
+export function PromptCard({ prompt, projectId, onDelete, onArchive, onUpdate, showArchived, categoriesVisible, getCategoryById }: PromptCardProps) {
   const { copy } = useCopyToClipboard();
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -97,7 +100,7 @@ export function PromptCard({ prompt, projectId, onDelete, onArchive, onUpdate, s
 
   const handleSave = () => {
     if (editContent.trim() && editContent !== prompt.content) {
-      onUpdate(prompt.id, editContent.trim(), prompt.type);
+      onUpdate(prompt.id, editContent.trim(), prompt.category_id);
     }
     setIsEditing(false);
   };
@@ -216,11 +219,8 @@ export function PromptCard({ prompt, projectId, onDelete, onArchive, onUpdate, s
     }, 500);
   };
 
-  const handleTypeToggle = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const newType: PromptType = prompt.type === 'ui' ? 'backend' : 'ui';
-    onUpdate(prompt.id, prompt.content, newType);
-  };
+  // Get category info for badge display
+  const category = getCategoryById(prompt.category_id);
 
   // Build className - avoid transition-all during drag for performance
   const cardClassName = [
@@ -319,22 +319,19 @@ export function PromptCard({ prompt, projectId, onDelete, onArchive, onUpdate, s
           <GripHorizontal className="h-4 w-4 text-muted-foreground/50" />
         </div>
 
-        <button
-          onClick={handleTypeToggle}
-          title={`Click to change to ${prompt.type === 'ui' ? 'Backend' : 'Frontend'}`}
-          className={`flex items-center gap-1 px-2 py-1 text-xs rounded cursor-pointer hover:opacity-80 transition-opacity ${
-            prompt.type === 'ui'
-              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-              : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-          }`}
-        >
-          {prompt.type === 'ui' ? (
-            <Layout className="h-3 w-3" />
-          ) : (
-            <Server className="h-3 w-3" />
-          )}
-          {prompt.type === 'ui' ? 'Frontend' : 'Backend'}
-        </button>
+        {/* Category badge - only show if categories are visible and category exists */}
+        {categoriesVisible && category && (
+          <div
+            className="flex items-center gap-1 px-2 py-1 text-xs rounded"
+            style={{
+              backgroundColor: category.color + '20',
+              color: category.color,
+            }}
+          >
+            <DynamicIcon name={category.icon} className="h-3 w-3" />
+            {category.name}
+          </div>
+        )}
       </div>
         </Card>
 

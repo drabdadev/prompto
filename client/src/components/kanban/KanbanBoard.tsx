@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
   DndContext,
   closestCorners,
@@ -13,8 +13,12 @@ import {
   horizontalListSortingStrategy,
   arrayMove,
 } from '@dnd-kit/sortable';
+import { Sun, Moon, Settings, HelpCircle } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useProjects } from '@/hooks/useProjects';
 import { usePrompts } from '@/hooks/usePrompts';
+import { useCategories } from '@/hooks/useCategories';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { FilterBar } from './FilterBar';
 import { ProjectColumn } from './ProjectColumn';
@@ -22,7 +26,8 @@ import { EmptyState } from './EmptyState';
 import { ProjectDialog } from '@/components/dialogs/ProjectDialog';
 import { PromptDialog } from '@/components/dialogs/PromptDialog';
 import { DatabaseManagementDialog } from '@/components/dialogs/DatabaseManagementDialog';
-import type { Project, Prompt, PromptType } from '@/types';
+import { CategoryManagementDialog } from '@/components/dialogs/CategoryManagementDialog';
+import type { Project, Prompt } from '@/types';
 
 export function KanbanBoard() {
   const {
@@ -51,6 +56,17 @@ export function KanbanBoard() {
 
   const { isDark, toggle: toggleDarkMode } = useDarkMode();
 
+  const {
+    categories,
+    categoriesVisible,
+    setCategoriesVisible,
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    reorderCategories,
+    getCategoryById,
+  } = useCategories();
+
   // Dialog states
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [promptDialogOpen, setPromptDialogOpen] = useState(false);
@@ -60,9 +76,39 @@ export function KanbanBoard() {
 
   // Focus mode - when set, only show this project centered
   const [focusedProjectId, setFocusedProjectId] = useState<string | null>(null);
+  // Animation state: 'idle' | 'imploding' | 'focused' | 'expanding'
+  const [focusAnimationState, setFocusAnimationState] = useState<'idle' | 'imploding' | 'focused' | 'expanding'>('idle');
+  const prevFocusedProjectId = useRef<string | null>(null);
+
+  // Handle focus mode with animation
+  const handleToggleFocus = useCallback((projectId: string | null) => {
+    if (projectId && !focusedProjectId) {
+      // Entering focus mode - start implode animation
+      setFocusAnimationState('imploding');
+      setFocusedProjectId(projectId);
+      // After animation completes, set to focused state
+      setTimeout(() => {
+        setFocusAnimationState('focused');
+      }, 400);
+    } else if (!projectId && focusedProjectId) {
+      // Exiting focus mode - start expand animation
+      setFocusAnimationState('expanding');
+      // After a brief delay, clear focus and let columns animate in
+      setTimeout(() => {
+        setFocusedProjectId(null);
+        setTimeout(() => {
+          setFocusAnimationState('idle');
+        }, 400);
+      }, 50);
+    }
+    prevFocusedProjectId.current = projectId;
+  }, [focusedProjectId]);
 
   // Database management dialog
   const [databaseDialogOpen, setDatabaseDialogOpen] = useState(false);
+
+  // Category management dialog
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
 
   // DnD sensors
   const sensors = useSensors(
@@ -185,21 +231,21 @@ export function KanbanBoard() {
     await deletePrompt(id);
   };
 
-  const handleAddPrompt = async (projectId: string, content: string, type: PromptType) => {
-    await createPrompt({ project_id: projectId, content, type });
+  const handleAddPrompt = async (projectId: string, content: string, categoryId: string | null) => {
+    await createPrompt({ project_id: projectId, content, category_id: categoryId });
   };
 
   const handleArchivePrompt = async (id: string, archived: boolean) => {
     await archivePrompt(id, archived);
   };
 
-  const handleUpdatePrompt = async (id: string, content: string, type: PromptType) => {
-    await updatePrompt(id, { content, type });
+  const handleUpdatePrompt = async (id: string, content: string, categoryId: string | null) => {
+    await updatePrompt(id, { content, category_id: categoryId });
   };
 
-  const handleSavePrompt = async (content: string, type: PromptType) => {
+  const handleSavePrompt = async (content: string, categoryId: string | null) => {
     if (editingPrompt) {
-      await updatePrompt(editingPrompt.id, { content, type });
+      await updatePrompt(editingPrompt.id, { content, category_id: categoryId });
     }
     setPromptDialogOpen(false);
   };
@@ -214,11 +260,62 @@ export function KanbanBoard() {
 
   return (
     <div className="h-full flex flex-col pt-2 px-6 pb-6 bg-background overflow-hidden">
-      {/* Header with title */}
+      {/* Header with title and controls */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <img src="/favicon.ico" alt="Prompto" className="w-8 h-8" />
           <h1 className="text-2xl font-bold text-foreground">Prompto</h1>
+        </div>
+
+        {/* Controls moved to header */}
+        <div className="flex items-center gap-3">
+          {/* Help icon with keyboard shortcuts tooltip */}
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  className="p-1.5 rounded-md hover:bg-muted transition-colors"
+                  aria-label="Keyboard shortcuts"
+                >
+                  <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs p-3 text-left">
+                <p className="font-medium mb-2">Scorciatoie da tastiera</p>
+                <div className="space-y-1.5 text-xs">
+                  <p className="text-muted-foreground font-medium mb-1">Su prompt (hover):</p>
+                  <p><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded text-[10px] font-mono">E</kbd> Modifica prompt</p>
+                  <p><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded text-[10px] font-mono">A</kbd> Archivia / Ripristina</p>
+                  <p><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded text-[10px] font-mono">C</kbd> Copia prompt</p>
+                  <p><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded text-[10px] font-mono">Canc</kbd> Elimina prompt</p>
+                  <p className="text-muted-foreground font-medium mb-1 mt-2">Su colonna (hover):</p>
+                  <p><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded text-[10px] font-mono">F</kbd> Focus mode</p>
+                  <p><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded text-[10px] font-mono">Tab</kbd> Mostra archivio</p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <button
+            onClick={toggleDarkMode}
+            className="p-1.5 rounded-md hover:bg-muted transition-colors"
+            aria-label="Toggle dark mode"
+          >
+            {isDark ? (
+              <Sun className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <Moon className="h-4 w-4 text-muted-foreground" />
+            )}
+          </button>
+
+          <div className="flex items-center gap-1.5">
+            <Settings className="h-4 w-4 text-muted-foreground" />
+            <Switch
+              checked={editMode}
+              onCheckedChange={setEditMode}
+              aria-label="Toggle edit mode"
+            />
+          </div>
         </div>
       </div>
 
@@ -228,9 +325,9 @@ export function KanbanBoard() {
         onFilterChange={setFilter}
         onAddProject={handleAddProject}
         editMode={editMode}
-        onEditModeChange={setEditMode}
-        isDarkMode={isDark}
-        onDarkModeToggle={toggleDarkMode}
+        categories={categories}
+        categoriesVisible={categoriesVisible}
+        onCategoryManagement={() => setCategoryDialogOpen(true)}
         onDatabaseManagement={() => setDatabaseDialogOpen(true)}
       />
 
@@ -249,20 +346,35 @@ export function KanbanBoard() {
           >
             <div className={`flex-1 kanban-scroll pt-4 overflow-y-auto ${focusedProjectId ? 'overflow-x-hidden' : 'overflow-x-auto'}`}>
               <div className={`h-full pb-4 transition-all duration-300 ${focusedProjectId ? 'w-full' : 'flex gap-4'}`}>
-                {projects.map((project) => {
+                {projects.map((project, index) => {
                   const isFocused = project.id === focusedProjectId;
-                  const isHidden = focusedProjectId && !isFocused;
+                  const isOther = focusedProjectId && !isFocused;
+
+                  // Determine animation class based on state
+                  let animationClass = '';
+                  if (isOther) {
+                    if (focusAnimationState === 'imploding') {
+                      animationClass = 'column-implode-out';
+                    } else if (focusAnimationState === 'focused') {
+                      animationClass = 'column-imploded';
+                    } else if (focusAnimationState === 'expanding') {
+                      animationClass = 'column-implode-in';
+                    }
+                  }
+
+                  // Calculate direction for implode effect (left columns go left, right go right)
+                  const focusedIndex = projects.findIndex(p => p.id === focusedProjectId);
+                  const direction = index < focusedIndex ? '-100px' : '100px';
 
                   return (
                     <div
                       key={project.id}
                       className={`transition-all duration-300 ${
-                        isHidden
-                          ? 'hidden'
-                          : isFocused
-                            ? 'w-full'
-                            : ''
-                      }`}
+                        isFocused ? 'w-full' : ''
+                      } ${animationClass}`}
+                      style={{
+                        '--implode-direction': direction,
+                      } as React.CSSProperties}
                     >
                       <ProjectColumn
                         project={project}
@@ -277,7 +389,10 @@ export function KanbanBoard() {
                         onAddPrompt={handleAddPrompt}
                         editMode={editMode}
                         isFocused={isFocused}
-                        onToggleFocus={setFocusedProjectId}
+                        onToggleFocus={handleToggleFocus}
+                        categories={categories}
+                        categoriesVisible={categoriesVisible}
+                        getCategoryById={getCategoryById}
                       />
                     </div>
                   );
@@ -307,6 +422,18 @@ export function KanbanBoard() {
       <DatabaseManagementDialog
         open={databaseDialogOpen}
         onOpenChange={setDatabaseDialogOpen}
+      />
+
+      <CategoryManagementDialog
+        open={categoryDialogOpen}
+        onOpenChange={setCategoryDialogOpen}
+        categories={categories}
+        onCreateCategory={createCategory}
+        onUpdateCategory={updateCategory}
+        onDeleteCategory={deleteCategory}
+        onReorderCategories={reorderCategories}
+        categoriesVisible={categoriesVisible}
+        onCategoriesVisibleChange={setCategoriesVisible}
       />
     </div>
   );

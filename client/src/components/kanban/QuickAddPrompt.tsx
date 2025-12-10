@@ -1,18 +1,20 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Layout, Server } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import type { PromptType } from '@/types';
+import { DynamicIcon } from '@/components/DynamicIcon';
+import type { Category } from '@/types';
 
 interface QuickAddPromptProps {
   projectId: string;
-  onAdd: (content: string, type: PromptType) => Promise<void>;
+  onAdd: (content: string, categoryId: string | null) => Promise<void>;
+  categories: Category[];
+  categoriesVisible: boolean;
 }
 
 // LocalStorage key prefix for drafts
 const DRAFT_KEY_PREFIX = 'prompto_draft_';
 
-export function QuickAddPrompt({ projectId, onAdd }: QuickAddPromptProps) {
+export function QuickAddPrompt({ projectId, onAdd, categories, categoriesVisible }: QuickAddPromptProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -31,16 +33,16 @@ export function QuickAddPrompt({ projectId, onAdd }: QuickAddPromptProps) {
       const saved = localStorage.getItem(`${DRAFT_KEY_PREFIX}${projectId}`);
       if (saved) {
         const draft = JSON.parse(saved);
-        return { content: draft.content || '', type: draft.type || 'ui' };
+        return { content: draft.content || '', categoryId: draft.categoryId || null };
       }
     } catch (e) {
       console.error('Failed to load draft:', e);
     }
-    return { content: '', type: 'ui' as PromptType };
+    return { content: '', categoryId: null as string | null };
   }, [projectId]);
 
   const [content, setContent] = useState(() => loadDraft().content);
-  const [type, setType] = useState<PromptType>(() => loadDraft().type);
+  const [categoryId, setCategoryId] = useState<string | null>(() => loadDraft().categoryId);
 
   // Adjust textarea height when content changes
   useEffect(() => {
@@ -60,18 +62,18 @@ export function QuickAddPrompt({ projectId, onAdd }: QuickAddPromptProps) {
     return () => window.removeEventListener('resize', handleResize);
   }, [adjustTextareaHeight]);
 
-  // Save draft to localStorage whenever content or type changes
+  // Save draft to localStorage whenever content or categoryId changes
   useEffect(() => {
     if (content.trim()) {
       localStorage.setItem(
         `${DRAFT_KEY_PREFIX}${projectId}`,
-        JSON.stringify({ content, type })
+        JSON.stringify({ content, categoryId })
       );
     } else {
       // Remove draft if content is empty
       localStorage.removeItem(`${DRAFT_KEY_PREFIX}${projectId}`);
     }
-  }, [content, type, projectId]);
+  }, [content, categoryId, projectId]);
 
   // Clear draft after successful submit
   const clearDraft = useCallback(() => {
@@ -83,7 +85,7 @@ export function QuickAddPrompt({ projectId, onAdd }: QuickAddPromptProps) {
 
     setIsSubmitting(true);
     try {
-      await onAdd(content.trim(), type);
+      await onAdd(content.trim(), categoryId);
       setContent('');
       clearDraft();
       // Mantieni il focus sulla textarea per aggiungere altri prompt
@@ -102,10 +104,12 @@ export function QuickAddPrompt({ projectId, onAdd }: QuickAddPromptProps) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
-    } else if (e.key === 'Tab') {
-      // Toggle between Frontend and Backend on Tab
+    } else if (e.key === 'Tab' && categoriesVisible && categories.length > 0) {
+      // Cycle through categories on Tab (only if categories are visible)
       e.preventDefault();
-      setType(type === 'ui' ? 'backend' : 'ui');
+      const currentIndex = categoryId ? categories.findIndex(c => c.id === categoryId) : -1;
+      const nextIndex = (currentIndex + 1) % categories.length;
+      setCategoryId(categories[nextIndex].id);
     }
   };
 
@@ -125,33 +129,33 @@ export function QuickAddPrompt({ projectId, onAdd }: QuickAddPromptProps) {
           className="min-h-[60px] text-sm resize-none border-0 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none rounded-b-none overflow-hidden bg-transparent"
           disabled={isSubmitting}
         />
-        {/* Bottom toolbar */}
-        <div className="flex items-center justify-between gap-2 px-3 py-2 border-t border-slate-200/60 dark:border-slate-600/60 bg-slate-50/80 dark:bg-slate-800/50 rounded-b-lg">
-        <span className="text-xs text-muted-foreground">Tab per cambiare tipo</span>
-        <ToggleGroup
-          type="single"
-          value={type}
-          onValueChange={(value) => value && setType(value as PromptType)}
-          className="justify-end focus-visible:ring-0 focus-visible:ring-offset-0"
-        >
-          <ToggleGroupItem
-            value="ui"
-            className="px-2 py-1 text-xs gap-1 data-[state=on]:bg-green-100 data-[state=on]:text-green-800 dark:data-[state=on]:bg-green-900 dark:data-[state=on]:text-green-200 rounded focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 focus:outline-none"
-            tabIndex={-1}
-          >
-            <Layout className="h-3 w-3" />
-            Frontend
-          </ToggleGroupItem>
-          <ToggleGroupItem
-            value="backend"
-            className="px-2 py-1 text-xs gap-1 data-[state=on]:bg-blue-100 data-[state=on]:text-blue-800 dark:data-[state=on]:bg-blue-900 dark:data-[state=on]:text-blue-200 rounded focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 focus:outline-none"
-            tabIndex={-1}
-          >
-            <Server className="h-3 w-3" />
-            Backend
-          </ToggleGroupItem>
-        </ToggleGroup>
-        </div>
+        {/* Bottom toolbar - only show if categories are visible */}
+        {categoriesVisible && categories.length > 0 && (
+          <div className="flex items-center justify-end gap-2 px-3 py-2 border-t border-slate-200/60 dark:border-slate-600/60 bg-slate-50/80 dark:bg-slate-800/50 rounded-b-lg">
+            <ToggleGroup
+              type="single"
+              value={categoryId || ''}
+              onValueChange={(value) => setCategoryId(value || null)}
+              className="justify-end focus-visible:ring-0 focus-visible:ring-offset-0"
+            >
+              {categories.map((category) => (
+                <ToggleGroupItem
+                  key={category.id}
+                  value={category.id}
+                  className="px-2 py-1 text-xs gap-1 rounded focus-visible:ring-0 focus-visible:ring-offset-0 focus:ring-0 focus:outline-none transition-colors"
+                  style={{
+                    backgroundColor: categoryId === category.id ? category.color + '20' : undefined,
+                    color: categoryId === category.id ? category.color : undefined,
+                  }}
+                  tabIndex={-1}
+                >
+                  <DynamicIcon name={category.icon} className="h-3 w-3" />
+                  {category.name}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+          </div>
+        )}
       </div>
     </div>
   );

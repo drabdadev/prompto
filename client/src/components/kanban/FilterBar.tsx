@@ -1,115 +1,88 @@
-import { Plus, Layout, Server, Layers, Settings, Sun, Moon, HardDrive, HelpCircle } from 'lucide-react';
+import { Plus, Layers, HardDrive, Tags } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import type { FilterType } from '@/types';
+import { DynamicIcon } from '@/components/DynamicIcon';
+import type { FilterType, Category } from '@/types';
 
 interface FilterBarProps {
   filter: FilterType;
   onFilterChange: (filter: FilterType) => void;
   onAddProject: () => void;
   editMode: boolean;
-  onEditModeChange: (enabled: boolean) => void;
-  isDarkMode: boolean;
-  onDarkModeToggle: () => void;
+  categories: Category[];
+  categoriesVisible: boolean;
+  onCategoryManagement: () => void;
   onDatabaseManagement: () => void;
 }
 
-export function FilterBar({ filter, onFilterChange, onAddProject, editMode, onEditModeChange, isDarkMode, onDarkModeToggle, onDatabaseManagement }: FilterBarProps) {
+export function FilterBar({
+  filter,
+  onFilterChange,
+  onAddProject,
+  editMode,
+  categories,
+  categoriesVisible,
+  onCategoryManagement,
+  onDatabaseManagement,
+}: FilterBarProps) {
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-6 border-b border-border">
-      <div className="flex items-center gap-2 min-w-0">
-        <ToggleGroup
-          type="single"
-          value={filter}
-          onValueChange={(value) => value && onFilterChange(value as FilterType)}
-          className="bg-muted rounded-lg p-1"
-        >
-          <ToggleGroupItem
-            value="all"
-            className="px-3 py-1.5 text-sm gap-1.5 data-[state=on]:bg-card data-[state=on]:shadow-sm rounded"
+      {/* Category filters - only show if categoriesVisible */}
+      {categoriesVisible && categories.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 pb-6 border-b border-border">
+          <ToggleGroup
+            type="single"
+            value={filter}
+            onValueChange={(value) => value && onFilterChange(value as FilterType)}
+            className="bg-muted rounded-lg p-1"
           >
-            <Layers className="h-4 w-4" />
-            Vedi tutti
-          </ToggleGroupItem>
-          <ToggleGroupItem
-            value="ui"
-            className="px-3 py-1.5 text-sm gap-1.5 data-[state=on]:bg-green-100 data-[state=on]:text-green-800 dark:data-[state=on]:bg-green-900 dark:data-[state=on]:text-green-200 rounded"
-          >
-            <Layout className="h-4 w-4" />
-            Frontend
-          </ToggleGroupItem>
-          <ToggleGroupItem
-            value="backend"
-            className="px-3 py-1.5 text-sm gap-1.5 data-[state=on]:bg-blue-100 data-[state=on]:text-blue-800 dark:data-[state=on]:bg-blue-900 dark:data-[state=on]:text-blue-200 rounded"
-          >
-            <Server className="h-4 w-4" />
-            Backend
-          </ToggleGroupItem>
-        </ToggleGroup>
-      </div>
-
-      <div className="flex items-center gap-3">
-        {/* Help icon with keyboard shortcuts tooltip */}
-        <TooltipProvider delayDuration={200}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                className="p-1.5 rounded-md hover:bg-muted transition-colors"
-                aria-label="Keyboard shortcuts"
+            <ToggleGroupItem
+              value="all"
+              className="px-3 py-1.5 text-sm gap-1.5 data-[state=on]:bg-card data-[state=on]:shadow-sm rounded"
+            >
+              <Layers className="h-4 w-4" />
+              Tutti
+            </ToggleGroupItem>
+            {categories.map((category) => (
+              <ToggleGroupItem
+                key={category.id}
+                value={category.id}
+                className="px-3 py-1.5 text-sm gap-1.5 rounded transition-colors"
+                style={{
+                  backgroundColor: filter === category.id ? category.color + '20' : undefined,
+                  color: filter === category.id ? category.color : undefined,
+                }}
               >
-                <HelpCircle className="h-4 w-4 text-muted-foreground" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="max-w-xs p-3 text-left">
-              <p className="font-medium mb-2">Scorciatoie da tastiera</p>
-              <div className="space-y-1.5 text-xs">
-                <p><kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] font-mono">E</kbd> Modifica prompt</p>
-                <p><kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] font-mono">A</kbd> Archivia / Ripristina</p>
-                <p><kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] font-mono">C</kbd> Copia prompt</p>
-                <p><kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] font-mono">Canc</kbd> Elimina prompt</p>
-              </div>
-              <p className="text-[10px] text-gray-500 mt-2 pt-2 border-t border-gray-200">
-                Passa il mouse su un prompt per attivare le scorciatoie
-              </p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-
-        <button
-          onClick={onDarkModeToggle}
-          className="p-1.5 rounded-md hover:bg-muted transition-colors"
-          aria-label="Toggle dark mode"
-        >
-          {isDarkMode ? (
-            <Sun className="h-4 w-4 text-muted-foreground" />
-          ) : (
-            <Moon className="h-4 w-4 text-muted-foreground" />
-          )}
-        </button>
-        <div className="flex items-center gap-1.5">
-          <Settings className="h-4 w-4 text-muted-foreground" />
-          <Switch
-            checked={editMode}
-            onCheckedChange={onEditModeChange}
-            aria-label="Toggle edit mode"
-          />
+                <DynamicIcon name={category.icon} className="h-4 w-4" />
+                {category.name}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
         </div>
-      </div>
-      </div>
+      )}
 
+      {/* Edit mode actions row */}
       {editMode && (
-        <div className="flex justify-center items-center gap-4 pt-6">
-          <Button onClick={onAddProject} size="sm">
-            <Plus className="h-4 w-4 mr-1" />
-            Aggiungi progetto
-          </Button>
-          <Button onClick={onDatabaseManagement} size="sm" variant="ghost" className="text-muted-foreground">
-            <HardDrive className="h-4 w-4 mr-1" />
-            Gestione DB
-          </Button>
+        <div className={`py-6 ${!(categoriesVisible && categories.length > 0) ? 'border-b border-border' : ''}`}>
+          <div className="relative flex items-center justify-center">
+            {/* Center: Add project */}
+            <Button onClick={onAddProject} size="sm">
+              <Plus className="h-4 w-4 mr-1" />
+              Nuovo progetto
+            </Button>
+
+            {/* Right: Category management + Database management - absolutely positioned */}
+            <div className="absolute right-0 flex items-center gap-1 sm:gap-2">
+              <Button onClick={onCategoryManagement} size="sm" variant="ghost" className="text-muted-foreground px-2 sm:px-3">
+                <Tags className="h-4 w-4 sm:mr-1" />
+                <span className="hidden md:inline">Categorie</span>
+              </Button>
+              <Button onClick={onDatabaseManagement} size="sm" variant="ghost" className="text-muted-foreground px-2 sm:px-3">
+                <HardDrive className="h-4 w-4 sm:mr-1" />
+                <span className="hidden md:inline">Database</span>
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

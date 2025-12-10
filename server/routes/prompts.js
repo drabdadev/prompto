@@ -4,18 +4,23 @@ const { logger } = require('../config/logger');
 
 const router = express.Router();
 
-// GET /api/prompts - List all prompts with optional type and archived filter
+// GET /api/prompts - List all prompts with optional category and archived filter
 router.get('/', (req, res) => {
   try {
     const db = req.app.locals.db;
-    const { type, archived } = req.query;
+    const { category_id, archived } = req.query;
 
     let sql = 'SELECT * FROM prompts WHERE 1=1';
     const params = [];
 
-    if (type && ['ui', 'backend'].includes(type)) {
-      sql += ' AND type = ?';
-      params.push(type);
+    // Filter by category_id (can be a specific ID or 'null' for uncategorized)
+    if (category_id !== undefined) {
+      if (category_id === 'null' || category_id === '') {
+        sql += ' AND category_id IS NULL';
+      } else {
+        sql += ' AND category_id = ?';
+        params.push(category_id);
+      }
     }
 
     // Filter by archived status (default to non-archived)
@@ -84,7 +89,7 @@ router.put('/reorder', (req, res) => {
 router.post('/', (req, res) => {
   try {
     const db = req.app.locals.db;
-    const { project_id, content, type } = req.body;
+    const { project_id, content, category_id } = req.body;
 
     if (!project_id) {
       return res.status(400).json({ error: 'project_id is required' });
@@ -92,8 +97,13 @@ router.post('/', (req, res) => {
     if (!content || !content.trim()) {
       return res.status(400).json({ error: 'content is required' });
     }
-    if (!type || !['ui', 'backend'].includes(type)) {
-      return res.status(400).json({ error: 'type must be "ui" or "backend"' });
+
+    // Validate category_id if provided (optional - can be null)
+    if (category_id !== undefined && category_id !== null) {
+      const category = db.prepare('SELECT id FROM categories WHERE id = ?').get(category_id);
+      if (!category) {
+        return res.status(400).json({ error: 'Invalid category_id' });
+      }
     }
 
     // Verify project exists
@@ -109,18 +119,11 @@ router.post('/', (req, res) => {
 
     // Insert new prompt at position 0 (top)
     const id = uuidv4();
-    const prompt = {
-      id,
-      project_id,
-      content: content.trim(),
-      type,
-      position: 0
-    };
 
     db.prepare(`
-      INSERT INTO prompts (id, project_id, content, type, position)
-      VALUES (@id, @project_id, @content, @type, @position)
-    `).run(prompt);
+      INSERT INTO prompts (id, project_id, content, category_id, position)
+      VALUES (?, ?, ?, ?, 0)
+    `).run(id, project_id, content.trim(), category_id || null);
 
     const created = db.prepare('SELECT * FROM prompts WHERE id = ?').get(id);
     res.status(201).json(created);
@@ -135,26 +138,28 @@ router.put('/:id', (req, res) => {
   try {
     const db = req.app.locals.db;
     const { id } = req.params;
-    const { content, type } = req.body;
+    const { content, category_id } = req.body;
 
     const existing = db.prepare('SELECT * FROM prompts WHERE id = ?').get(id);
     if (!existing) {
       return res.status(404).json({ error: 'Prompt not found' });
     }
 
-    if (type && !['ui', 'backend'].includes(type)) {
-      return res.status(400).json({ error: 'type must be "ui" or "backend"' });
+    // Validate category_id if provided (can be null to remove category)
+    if (category_id !== undefined && category_id !== null) {
+      const category = db.prepare('SELECT id FROM categories WHERE id = ?').get(category_id);
+      if (!category) {
+        return res.status(400).json({ error: 'Invalid category_id' });
+      }
     }
 
-    const updates = {
-      content: content?.trim() || existing.content,
-      type: type || existing.type,
-      id
-    };
+    // Build update - category_id can be explicitly set to null
+    const newContent = content?.trim() || existing.content;
+    const newCategoryId = category_id !== undefined ? category_id : existing.category_id;
 
     db.prepare(`
-      UPDATE prompts SET content = @content, type = @type WHERE id = @id
-    `).run(updates);
+      UPDATE prompts SET content = ?, category_id = ? WHERE id = ?
+    `).run(newContent, newCategoryId, id);
 
     const updated = db.prepare('SELECT * FROM prompts WHERE id = ?').get(id);
     res.json(updated);

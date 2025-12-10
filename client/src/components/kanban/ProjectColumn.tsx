@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { useSortable } from '@dnd-kit/sortable';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { PromptCard } from './PromptCard';
 import { QuickAddPrompt } from './QuickAddPrompt';
-import type { Project, Prompt, PromptType } from '@/types';
+import type { Project, Prompt, Category } from '@/types';
 
 // Preset colors for the color picker
 const PRESET_COLORS = [
@@ -26,11 +26,14 @@ interface ProjectColumnProps {
   onEditPrompt: (prompt: Prompt) => void;
   onDeletePrompt: (id: string) => void;
   onArchivePrompt: (id: string, archived: boolean) => void;
-  onUpdatePrompt: (id: string, content: string, type: PromptType) => void;
-  onAddPrompt: (projectId: string, content: string, type: PromptType) => Promise<void>;
+  onUpdatePrompt: (id: string, content: string, categoryId: string | null) => void;
+  onAddPrompt: (projectId: string, content: string, categoryId: string | null) => Promise<void>;
   editMode: boolean;
   isFocused: boolean;
   onToggleFocus: (projectId: string | null) => void;
+  categories: Category[];
+  categoriesVisible: boolean;
+  getCategoryById: (id: string | null) => Category | undefined;
 }
 
 export function ProjectColumn({
@@ -47,9 +50,13 @@ export function ProjectColumn({
   editMode,
   isFocused,
   onToggleFocus,
+  categories,
+  categoriesVisible,
+  getCategoryById,
 }: ProjectColumnProps) {
   const [showArchived, setShowArchived] = useState(false);
   const [isFlipping, setIsFlipping] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   // Inline title editing
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -80,6 +87,44 @@ export function ProjectColumn({
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [showColorPicker]);
+
+  // Flip toggle function for archive view
+  const doFlipToggle = useCallback(() => {
+    setIsFlipping(true);
+    setTimeout(() => {
+      setShowArchived(prev => !prev);
+    }, 175);
+    setTimeout(() => {
+      setIsFlipping(false);
+    }, 350);
+  }, []);
+
+  // Keyboard shortcuts when hovering over column
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // Don't trigger if user is typing in an input/textarea
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+      return;
+    }
+
+    if (e.key === 'f' || e.key === 'F') {
+      e.preventDefault();
+      onToggleFocus(isFocused ? null : project.id);
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      if (!isFlipping) {
+        doFlipToggle();
+      }
+    }
+  }, [isFocused, project.id, onToggleFocus, isFlipping, doFlipToggle]);
+
+  // Add/remove keyboard listener based on hover state
+  useEffect(() => {
+    if (isHovered) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isHovered, handleKeyDown]);
 
   const handleTitleClick = () => {
     setEditedTitle(project.name);
@@ -128,21 +173,12 @@ export function ProjectColumn({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const handleAddPrompt = async (content: string, type: PromptType) => {
-    await onAddPrompt(project.id, content, type);
+  const handleAddPrompt = async (content: string, categoryId: string | null) => {
+    await onAddPrompt(project.id, content, categoryId);
   };
 
-  const handleFlipToggle = () => {
-    setIsFlipping(true);
-    // Change content at the halfway point of animation (0.35s / 2 = 175ms)
-    setTimeout(() => {
-      setShowArchived(!showArchived);
-    }, 175);
-    // Reset flipping state after animation completes (0.35s = 350ms)
-    setTimeout(() => {
-      setIsFlipping(false);
-    }, 350);
-  };
+  // Alias for the switch component (uses doFlipToggle)
+  const handleFlipToggle = doFlipToggle;
 
   // Render the column content (shared between front and back)
   const renderColumnContent = (isArchiveView: boolean) => {
@@ -154,7 +190,12 @@ export function ProjectColumn({
         {!isArchiveView && (
           <>
             <div className="mb-3">
-              <QuickAddPrompt projectId={project.id} onAdd={handleAddPrompt} />
+              <QuickAddPrompt
+                projectId={project.id}
+                onAdd={handleAddPrompt}
+                categories={categories}
+                categoriesVisible={categoriesVisible}
+              />
             </div>
             {/* Separator between quick entry and prompts list */}
             <div className="border-t border-border mb-3" />
@@ -187,6 +228,8 @@ export function ProjectColumn({
                   onArchive={onArchivePrompt}
                   onUpdate={onUpdatePrompt}
                   showArchived={isArchiveView}
+                  categoriesVisible={categoriesVisible}
+                  getCategoryById={getCategoryById}
                 />
               ))
             )}
@@ -200,6 +243,8 @@ export function ProjectColumn({
     <div
       ref={setNodeRef}
       style={style}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       className={`flex-shrink-0 min-w-0 relative flip-container ${
         isFocused
           ? 'w-full max-w-[800px] mx-auto'

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Copy, Layout, Server } from 'lucide-react';
+import { Copy } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -9,15 +9,14 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
-import type { Prompt, PromptType } from '@/types';
+import type { Prompt } from '@/types';
 
 interface PromptDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   prompt: Prompt | null;
-  onSave: (content: string, type: PromptType) => Promise<void>;
+  onSave: (content: string, categoryId: string | null) => Promise<void>;
 }
 
 export function PromptDialog({
@@ -27,14 +26,12 @@ export function PromptDialog({
   onSave,
 }: PromptDialogProps) {
   const [content, setContent] = useState('');
-  const [type, setType] = useState<PromptType>('ui');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { copy } = useCopyToClipboard();
 
   useEffect(() => {
     if (open && prompt) {
       setContent(prompt.content);
-      setType(prompt.type);
     }
   }, [open, prompt]);
 
@@ -44,7 +41,8 @@ export function PromptDialog({
 
     setIsSubmitting(true);
     try {
-      await onSave(content.trim(), type);
+      // Keep the same category_id when editing
+      await onSave(content.trim(), prompt?.category_id ?? null);
     } finally {
       setIsSubmitting(false);
     }
@@ -59,33 +57,11 @@ export function PromptDialog({
       <DialogContent className="sm:max-w-[600px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Edit Prompt</DialogTitle>
+            <DialogTitle>Modifica Prompt</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <div className="flex items-center justify-between">
-              <ToggleGroup
-                type="single"
-                value={type}
-                onValueChange={(value) => value && setType(value as PromptType)}
-                className="bg-muted rounded-lg p-1"
-              >
-                <ToggleGroupItem
-                  value="ui"
-                  className="px-3 py-1.5 text-sm gap-1.5 data-[state=on]:bg-green-100 data-[state=on]:text-green-800 dark:data-[state=on]:bg-green-900 dark:data-[state=on]:text-green-200 rounded"
-                >
-                  <Layout className="h-4 w-4" />
-                  Frontend
-                </ToggleGroupItem>
-                <ToggleGroupItem
-                  value="backend"
-                  className="px-3 py-1.5 text-sm gap-1.5 data-[state=on]:bg-blue-100 data-[state=on]:text-blue-800 dark:data-[state=on]:bg-blue-900 dark:data-[state=on]:text-blue-200 rounded"
-                >
-                  <Server className="h-4 w-4" />
-                  Backend
-                </ToggleGroupItem>
-              </ToggleGroup>
-
+            <div className="flex items-center justify-end">
               <Button
                 type="button"
                 variant="outline"
@@ -93,14 +69,14 @@ export function PromptDialog({
                 onClick={handleCopy}
               >
                 <Copy className="h-4 w-4 mr-1" />
-                Copy
+                Copia
               </Button>
             </div>
 
             <Textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Enter prompt content..."
+              placeholder="Inserisci il contenuto del prompt..."
               className="min-h-[200px] font-mono text-sm"
             />
           </div>
@@ -111,10 +87,10 @@ export function PromptDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              Annulla
             </Button>
             <Button type="submit" disabled={!content.trim() || isSubmitting}>
-              Save
+              Salva
             </Button>
           </DialogFooter>
         </form>

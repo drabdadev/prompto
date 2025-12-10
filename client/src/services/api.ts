@@ -2,8 +2,11 @@ import axios from 'axios';
 import type {
   Project,
   Prompt,
+  Category,
   CreateProjectInput,
   UpdateProjectInput,
+  CreateCategoryInput,
+  UpdateCategoryInput,
   CreatePromptInput,
   UpdatePromptInput,
   MovePromptInput,
@@ -77,10 +80,10 @@ export const projectsApi = {
 
 // Prompts API
 export const promptsApi = {
-  getAll: async (type?: FilterType, archived: boolean = false): Promise<Prompt[]> => {
+  getAll: async (categoryId?: FilterType, archived: boolean = false): Promise<Prompt[]> => {
     const params: Record<string, string> = { archived: archived ? 'true' : 'false' };
-    if (type && type !== 'all') {
-      params.type = type;
+    if (categoryId && categoryId !== 'all') {
+      params.category_id = categoryId;
     }
     const { data } = await api.get('/prompts', { params });
     return data;
@@ -165,6 +168,45 @@ export const databaseApi = {
       responseType: 'blob'
     });
     return response.data;
+  },
+};
+
+// Categories API
+export const categoriesApi = {
+  getAll: async (): Promise<Category[]> => {
+    const { data } = await api.get('/categories');
+    return data;
+  },
+
+  create: async (input: CreateCategoryInput): Promise<Category> => {
+    const { data } = await api.post('/categories', input);
+    return data;
+  },
+
+  update: async (id: string, input: UpdateCategoryInput): Promise<Category> => {
+    const { data } = await api.put(`/categories/${id}`, input);
+    return data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/categories/${id}`);
+  },
+
+  reorder: async (categoryIds: string[]): Promise<Category[]> => {
+    const { data } = await api.put('/categories/reorder', { categoryIds });
+    return data;
+  },
+};
+
+// Settings API
+export const settingsApi = {
+  get: async (key: string): Promise<string> => {
+    const { data } = await api.get(`/settings/${key}`);
+    return data.value;
+  },
+
+  set: async (key: string, value: string): Promise<void> => {
+    await api.put(`/settings/${key}`, { value });
   },
 };
 
