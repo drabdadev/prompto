@@ -87,7 +87,10 @@ export function QuickAddPrompt({ projectId, onAdd }: QuickAddPromptProps) {
       setContent('');
       clearDraft();
       // Mantieni il focus sulla textarea per aggiungere altri prompt
-      textareaRef.current?.focus();
+      // Delay per assicurarsi che il focus venga impostato dopo il re-render della lista
+      requestAnimationFrame(() => {
+        textareaRef.current?.focus();
+      });
     } catch (err) {
       console.error('Failed to add prompt:', err);
     } finally {
