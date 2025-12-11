@@ -167,10 +167,29 @@ splashWindow = new BrowserWindow({
 ### 2. better-sqlite3 NODE_MODULE_VERSION Mismatch
 **Errore**: "NODE_MODULE_VERSION 131 vs 140" al primo avvio.
 **Causa**: Il modulo nativo è compilato per Node.js locale, non Electron.
-**Soluzione**: Eseguire `npx electron-rebuild -f -w better-sqlite3` prima di `electron-builder`.
-Lo script `electron:build:mac` include già electron-rebuild, ma a volte serve forzarlo:
+
+**IMPORTANTE - Build Script Corretti:**
+Gli script `electron:build:*` NON devono avere `npm run rebuild:native` alla fine!
+Questo perché:
+1. `electron-builder` ricompila automaticamente better-sqlite3 per Electron (via `npmRebuild: true`)
+2. `npm run rebuild:native` lo ricompilerebbe per Node.js, rompendo la build
+
+**Script corretto** (già configurato):
+```json
+"electron:build:mac": "npm run build && electron-builder --mac"
+```
+
+**Se la build fallisce comunque**, fare clean rebuild:
 ```bash
-npx electron-rebuild -f -w better-sqlite3 && npm run electron:build:mac
+rm -rf dist-electron node_modules/better-sqlite3/build
+npx electron-rebuild -f -w better-sqlite3
+npm run electron:build:mac
+```
+
+**Verifica rapida dell'app:**
+```bash
+dist-electron/mac-arm64/Prompto.app/Contents/MacOS/Prompto 2>&1 | head -20
+# Deve mostrare "Database initialized OK" e "Server running on port 5080"
 ```
 
 ### 3. DMG Layout Standard
