@@ -387,6 +387,8 @@ async function startBackendServer() {
   const projectsRouter = require(path.join(serverDir, 'routes', 'projects.js'));
   const promptsRouter = require(path.join(serverDir, 'routes', 'prompts.js'));
   const databaseRouter = require(path.join(serverDir, 'routes', 'database.js'));
+  const categoriesRouter = require(path.join(serverDir, 'routes', 'categories.js'));
+  const settingsRouter = require(path.join(serverDir, 'routes', 'settings.js'));
   debugLog('All modules loaded');
 
   expressApp = express();
@@ -438,6 +440,8 @@ async function startBackendServer() {
         expressApp.use('/api/projects', wrapRouter(projectsRouter, 'projects'));
         expressApp.use('/api/prompts', wrapRouter(promptsRouter, 'prompts'));
         expressApp.use('/api/database', wrapRouter(databaseRouter, 'database'));
+        expressApp.use('/api/categories', wrapRouter(categoriesRouter, 'categories'));
+        expressApp.use('/api/settings', wrapRouter(settingsRouter, 'settings'));
 
         // Serve static files in production
         if (!isDev) {

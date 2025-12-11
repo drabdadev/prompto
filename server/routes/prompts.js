@@ -120,10 +120,13 @@ router.post('/', (req, res) => {
     // Insert new prompt at position 0 (top)
     const id = uuidv4();
 
+    // Determine type based on category_id for backward compatibility with old schema
+    const typeValue = category_id === 'cat_backend' ? 'backend' : 'ui';
+
     db.prepare(`
-      INSERT INTO prompts (id, project_id, content, category_id, position)
-      VALUES (?, ?, ?, ?, 0)
-    `).run(id, project_id, content.trim(), category_id || null);
+      INSERT INTO prompts (id, project_id, content, type, category_id, position)
+      VALUES (?, ?, ?, ?, ?, 0)
+    `).run(id, project_id, content.trim(), typeValue, category_id || null);
 
     const created = db.prepare('SELECT * FROM prompts WHERE id = ?').get(id);
     res.status(201).json(created);
