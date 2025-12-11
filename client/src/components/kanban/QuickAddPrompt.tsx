@@ -27,22 +27,49 @@ export function QuickAddPrompt({ projectId, onAdd, categories, categoriesVisible
     }
   }, []);
 
+  // Get default category (first one if categories are visible)
+  const getDefaultCategoryId = useCallback(() => {
+    if (categoriesVisible && categories.length > 0) {
+      return categories[0].id;
+    }
+    return null;
+  }, [categoriesVisible, categories]);
+
   // Load draft from localStorage on mount
   const loadDraft = useCallback(() => {
     try {
       const saved = localStorage.getItem(`${DRAFT_KEY_PREFIX}${projectId}`);
       if (saved) {
         const draft = JSON.parse(saved);
-        return { content: draft.content || '', categoryId: draft.categoryId || null };
+        return { content: draft.content || '', categoryId: draft.categoryId };
       }
     } catch (e) {
       console.error('Failed to load draft:', e);
     }
-    return { content: '', categoryId: null as string | null };
+    return { content: '', categoryId: undefined as string | null | undefined };
   }, [projectId]);
 
   const [content, setContent] = useState(() => loadDraft().content);
-  const [categoryId, setCategoryId] = useState<string | null>(() => loadDraft().categoryId);
+  // Use draft categoryId if available, otherwise default to first category
+  const [categoryId, setCategoryId] = useState<string | null>(() => {
+    const draft = loadDraft();
+    // If draft has explicit categoryId (even null), use it; otherwise use default
+    if (draft.categoryId !== undefined) {
+      return draft.categoryId;
+    }
+    return getDefaultCategoryId();
+  });
+
+  // Update categoryId when categories become visible/change and no selection
+  useEffect(() => {
+    if (categoriesVisible && categories.length > 0 && categoryId === null) {
+      // Check if there's no draft with explicit null
+      const saved = localStorage.getItem(`${DRAFT_KEY_PREFIX}${projectId}`);
+      if (!saved) {
+        setCategoryId(categories[0].id);
+      }
+    }
+  }, [categoriesVisible, categories, categoryId, projectId]);
 
   // Adjust textarea height when content changes
   useEffect(() => {
@@ -87,6 +114,8 @@ export function QuickAddPrompt({ projectId, onAdd, categories, categoriesVisible
     try {
       await onAdd(content.trim(), categoryId);
       setContent('');
+      // Reset to default category for next prompt
+      setCategoryId(getDefaultCategoryId());
       clearDraft();
       // Mantieni il focus sulla textarea per aggiungere altri prompt
       // Delay per assicurarsi che il focus venga impostato dopo il re-render della lista
@@ -104,12 +133,26 @@ export function QuickAddPrompt({ projectId, onAdd, categories, categoriesVisible
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
-    } else if (e.key === 'Tab' && categoriesVisible && categories.length > 0) {
-      // Cycle through categories on Tab (only if categories are visible)
+    } else if (e.key === 'Escape') {
+      // Remove focus from textarea
       e.preventDefault();
-      const currentIndex = categoryId ? categories.findIndex(c => c.id === categoryId) : -1;
-      const nextIndex = (currentIndex + 1) % categories.length;
-      setCategoryId(categories[nextIndex].id);
+      textareaRef.current?.blur();
+    } else if (e.key === 'Tab' && categoriesVisible && categories.length > 0) {
+      // Cycle through categories on Tab, then to null (deselected)
+      e.preventDefault();
+      if (categoryId === null) {
+        // No selection -> first category
+        setCategoryId(categories[0].id);
+      } else {
+        const currentIndex = categories.findIndex(c => c.id === categoryId);
+        if (currentIndex === categories.length - 1) {
+          // Last category -> deselect (null)
+          setCategoryId(null);
+        } else {
+          // Move to next category
+          setCategoryId(categories[currentIndex + 1].id);
+        }
+      }
     }
   };
 
@@ -148,6 +191,13 @@ export function QuickAddPrompt({ projectId, onAdd, categories, categoriesVisible
                     color: categoryId === category.id ? category.color : undefined,
                   }}
                   tabIndex={-1}
+                  onClick={(e) => {
+                    // Allow deselecting by clicking on already selected tag
+                    if (categoryId === category.id) {
+                      e.preventDefault();
+                      setCategoryId(null);
+                    }
+                  }}
                 >
                   <DynamicIcon name={category.icon} className="h-3 w-3" />
                   {category.name}

@@ -5,9 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Prompto</title>
 
+    <!-- Apply dark mode before render to prevent flash -->
+    <script>
+      (function() {
+        const saved = localStorage.getItem('darkMode');
+        // Default to dark mode if not saved
+        const isDark = saved !== null ? JSON.parse(saved) : true;
+        if (isDark) document.documentElement.classList.add('dark');
+      })();
+    </script>
+
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#f5f5f5" />
+    <meta name="theme-color" content="#0a0a0a" />
 
     <!-- Icons -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />

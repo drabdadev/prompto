@@ -237,7 +237,7 @@ export function PromptCard({ prompt, projectId, onDelete, onArchive, onUpdate, s
     <div
       ref={setNodeRef}
       style={style}
-      className="prompt-flip-container"
+      className={`prompt-flip-container ${isDragging ? 'dragging' : ''}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   DndContext,
   closestCorners,
@@ -80,26 +80,50 @@ export function KanbanBoard() {
   const [focusAnimationState, setFocusAnimationState] = useState<'idle' | 'imploding' | 'focused' | 'expanding'>('idle');
   const prevFocusedProjectId = useRef<string | null>(null);
 
+  // Store the focused column's initial position for smooth animation
+  const [focusedColumnRect, setFocusedColumnRect] = useState<{ left: number; top: number; width: number } | null>(null);
+  const [animateToCenter, setAnimateToCenter] = useState(false);
+  const columnRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  // Track the previously focused column for exit animation
+  const [exitingColumnId, setExitingColumnId] = useState<string | null>(null);
+
   // Handle focus mode with animation
   const handleToggleFocus = useCallback((projectId: string | null) => {
     if (projectId && !focusedProjectId) {
-      // Entering focus mode - start implode animation
-      setFocusAnimationState('imploding');
+      // Entering focus mode - capture position of focused column only
+      const columnEl = columnRefs.current.get(projectId);
+      if (columnEl) {
+        const rect = columnEl.getBoundingClientRect();
+        setFocusedColumnRect({ left: rect.left, top: rect.top, width: rect.width });
+      }
       setFocusedProjectId(projectId);
-      // After animation completes, set to focused state
+      setFocusAnimationState('imploding');
+
+      // After one frame at initial position, start animation to center
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setAnimateToCenter(true);
+        });
+      });
+
+      // After animation completes, set to focused state (keep rect for fixed positioning)
       setTimeout(() => {
         setFocusAnimationState('focused');
+        // Don't clear focusedColumnRect - keep it for fixed positioning during focus mode
       }, 400);
     } else if (!projectId && focusedProjectId) {
-      // Exiting focus mode - start expand animation
+      // Exiting focus mode - track which column was focused for special animation
+      setExitingColumnId(focusedProjectId);
       setFocusAnimationState('expanding');
-      // After a brief delay, clear focus and let columns animate in
+      setAnimateToCenter(false);
+      setFocusedProjectId(null);
+      setFocusedColumnRect(null);
+
+      // After animation completes, clean up
       setTimeout(() => {
-        setFocusedProjectId(null);
-        setTimeout(() => {
-          setFocusAnimationState('idle');
-        }, 400);
-      }, 50);
+        setFocusAnimationState('idle');
+        setExitingColumnId(null);
+      }, 350);
     }
     prevFocusedProjectId.current = projectId;
   }, [focusedProjectId]);
@@ -109,6 +133,54 @@ export function KanbanBoard() {
 
   // Category management dialog
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+
+  // Shortcuts tooltip state
+  const [shortcutsTooltipOpen, setShortcutsTooltipOpen] = useState(false);
+
+  // Deleting project animation state
+  const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts when typing in inputs
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return;
+      }
+
+      // Shift + S → Toggle edit mode (settings)
+      if (e.shiftKey && e.key === 'S') {
+        e.preventDefault();
+        setEditMode(prev => !prev);
+        return;
+      }
+
+      // Shift + D → Dark mode toggle
+      if (e.shiftKey && e.key === 'D') {
+        e.preventDefault();
+        toggleDarkMode();
+        return;
+      }
+
+      // ? → Show shortcuts tooltip
+      if (e.key === '?') {
+        e.preventDefault();
+        setShortcutsTooltipOpen(prev => !prev);
+        return;
+      }
+
+      // Shift + N → New project
+      if (e.shiftKey && e.key === 'N') {
+        e.preventDefault();
+        handleAddProject();
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggleDarkMode]);
 
   // DnD sensors
   const sensors = useSensors(
@@ -208,7 +280,13 @@ export function KanbanBoard() {
 
   const handleDeleteProject = async (id: string) => {
     if (window.confirm('Eliminare questo progetto e tutti i suoi prompt?')) {
-      await deleteProject(id);
+      // Start delete animation
+      setDeletingProjectId(id);
+      // Wait for animation to complete, then delete
+      setTimeout(async () => {
+        await deleteProject(id);
+        setDeletingProjectId(null);
+      }, 300);
     }
   };
 
@@ -271,7 +349,7 @@ export function KanbanBoard() {
         <div className="flex items-center gap-3">
           {/* Help icon with keyboard shortcuts tooltip */}
           <TooltipProvider delayDuration={200}>
-            <Tooltip>
+            <Tooltip open={shortcutsTooltipOpen} onOpenChange={setShortcutsTooltipOpen}>
               <TooltipTrigger asChild>
                 <button
                   className="p-1.5 rounded-md hover:bg-muted transition-colors"
@@ -281,9 +359,13 @@ export function KanbanBoard() {
                 </button>
               </TooltipTrigger>
               <TooltipContent side="bottom" className="max-w-xs p-3 text-left">
-                <p className="font-medium mb-2">Scorciatoie da tastiera</p>
+                <p className="font-medium mb-2">Scorciatoie da tastiera <kbd className="ml-1 px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded text-[10px] font-mono">?</kbd></p>
                 <div className="space-y-1.5 text-xs">
-                  <p className="text-muted-foreground font-medium mb-1">Su prompt (hover):</p>
+                  <p className="text-muted-foreground font-medium mb-1">Globali:</p>
+                  <p><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded text-[10px] font-mono">⇧+N</kbd> Nuovo progetto</p>
+                  <p><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded text-[10px] font-mono">⇧+S</kbd> Modalità modifica</p>
+                  <p><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded text-[10px] font-mono">⇧+D</kbd> Tema chiaro/scuro</p>
+                  <p className="text-muted-foreground font-medium mb-1 mt-2">Su prompt (hover):</p>
                   <p><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded text-[10px] font-mono">E</kbd> Modifica prompt</p>
                   <p><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded text-[10px] font-mono">A</kbd> Archivia / Ripristina</p>
                   <p><kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded text-[10px] font-mono">C</kbd> Copia prompt</p>
@@ -345,14 +427,20 @@ export function KanbanBoard() {
             strategy={horizontalListSortingStrategy}
           >
             <div className={`flex-1 kanban-scroll pt-4 overflow-y-auto ${focusedProjectId ? 'overflow-x-hidden' : 'overflow-x-auto'}`}>
-              <div className={`h-full pb-4 transition-all duration-300 ${focusedProjectId ? 'w-full' : 'flex gap-4'}`}>
-                {projects.map((project, index) => {
+              <div className={`h-full pb-4 ${focusedProjectId ? 'w-full' : 'flex gap-4'}`}>
+                {projects.map((project) => {
                   const isFocused = project.id === focusedProjectId;
                   const isOther = focusedProjectId && !isFocused;
+                  const isExiting = project.id === exitingColumnId;
+                  const isDeleting = project.id === deletingProjectId;
 
-                  // Determine animation class based on state
+                  // Determine animation class based on state (for non-focused columns)
                   let animationClass = '';
-                  if (isOther) {
+
+                  // Delete animation takes priority
+                  if (isDeleting) {
+                    animationClass = 'column-implode-out';
+                  } else if (isOther) {
                     if (focusAnimationState === 'imploding') {
                       animationClass = 'column-implode-out';
                     } else if (focusAnimationState === 'focused') {
@@ -362,19 +450,53 @@ export function KanbanBoard() {
                     }
                   }
 
-                  // Calculate direction for implode effect (left columns go left, right go right)
-                  const focusedIndex = projects.findIndex(p => p.id === focusedProjectId);
-                  const direction = index < focusedIndex ? '-100px' : '100px';
+                  // For focused column: use fixed position throughout focus mode to be independent
+                  const isFocusedWithRect = isFocused && focusedColumnRect && (focusAnimationState === 'imploding' || focusAnimationState === 'focused');
+
+                  let columnStyle: React.CSSProperties = {};
+
+                  if (isFocusedWithRect) {
+                    // Entering or in focus mode
+                    columnStyle = {
+                      position: 'fixed',
+                      zIndex: 50,
+                      left: '50%',
+                      top: focusedColumnRect.top,
+                      transform: 'translateX(-50%)',
+                      width: Math.min(800, window.innerWidth - 48),
+                      maxHeight: 'calc(100vh - 150px)',
+                      transition: animateToCenter || focusAnimationState === 'focused'
+                        ? 'left 0.35s ease-out, width 0.35s ease-out, transform 0.35s ease-out'
+                        : 'none',
+                      // Initial position before animation starts
+                      ...(!animateToCenter && focusAnimationState === 'imploding' && {
+                        left: focusedColumnRect.left,
+                        transform: 'translateX(0)',
+                        width: focusedColumnRect.width,
+                      }),
+                    };
+                  }
+
+                  // When expanding, all columns get the expand animation
+                  // The exiting column gets a special class for a slightly different animation
+                  const expandAnimationClass = focusAnimationState === 'expanding'
+                    ? (isExiting ? 'column-exit-focus' : 'column-implode-in')
+                    : '';
+
+                  // Classes for the wrapper
+                  const wrapperClasses = isFocusedWithRect
+                    ? '' // No additional classes when using fixed position
+                    : animationClass || expandAnimationClass;
 
                   return (
                     <div
                       key={project.id}
-                      className={`transition-all duration-300 ${
-                        isFocused ? 'w-full' : ''
-                      } ${animationClass}`}
-                      style={{
-                        '--implode-direction': direction,
-                      } as React.CSSProperties}
+                      ref={(el) => {
+                        if (el) columnRefs.current.set(project.id, el);
+                        else columnRefs.current.delete(project.id);
+                      }}
+                      className={wrapperClasses}
+                      style={columnStyle}
                     >
                       <ProjectColumn
                         project={project}

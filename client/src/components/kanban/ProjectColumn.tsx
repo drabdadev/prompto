@@ -246,6 +246,8 @@ export function ProjectColumn({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={`flex-shrink-0 min-w-0 relative flip-container ${
+        isDragging ? 'dragging' : ''
+      } ${
         isFocused
           ? 'w-full max-w-[800px] mx-auto'
           : 'w-full sm:w-[500px] md:w-[600px] lg:w-[640px]'

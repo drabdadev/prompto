@@ -6,7 +6,8 @@ export function useDarkMode() {
     if (saved !== null) {
       return JSON.parse(saved);
     }
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    // Default to dark mode
+    return true;
   });
 
   useEffect(() => {

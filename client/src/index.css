@@ -154,6 +154,18 @@
   perspective: 1500px;
 }
 
+/* Disable 3D effects during drag for clean transform */
+.flip-container.dragging {
+  perspective: none;
+}
+
+.flip-container.dragging .flip-card {
+  transform-style: flat;
+  backface-visibility: visible;
+  transition: none;
+  will-change: auto;
+}
+
 .flip-card {
   transform-style: preserve-3d;
   transition: background-color 0.2s ease;
@@ -218,6 +230,20 @@
   position: relative;
 }
 
+/* Disable 3D effects during drag for clean transform */
+.prompt-flip-container.dragging {
+  perspective: none;
+}
+
+.prompt-flip-container.dragging .prompt-flip-card {
+  transform-style: flat;
+  transition: none;
+}
+
+.prompt-flip-container.dragging .prompt-flip-front {
+  transform: none;
+}
+
 .prompt-flip-card {
   position: relative;
   width: 100%;
@@ -271,52 +297,66 @@
   }
 }
 
-/* Focus Mode - Implode animation for non-focused columns */
+/* Focus Mode - Implode animation: columns collapse toward their own center */
 @keyframes implodeOut {
   0% {
-    transform: scale(1) translateX(0);
+    transform: scale(1);
     opacity: 1;
     filter: blur(0);
   }
-  30% {
-    transform: scale(0.95);
-    opacity: 0.8;
-  }
   100% {
-    transform: scale(0) translateX(var(--implode-direction, 0));
+    transform: scale(0.8);
     opacity: 0;
-    filter: blur(8px);
-    pointer-events: none;
+    filter: blur(3px);
   }
 }
 
 @keyframes implodeIn {
   0% {
-    transform: scale(0) translateX(var(--implode-direction, 0));
+    transform: scale(0.8);
     opacity: 0;
-    filter: blur(8px);
-  }
-  70% {
-    transform: scale(0.95);
-    opacity: 0.8;
+    filter: blur(3px);
   }
   100% {
-    transform: scale(1) translateX(0);
+    transform: scale(1);
     opacity: 1;
     filter: blur(0);
   }
 }
 
 .column-implode-out {
-  animation: implodeOut 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: implodeOut 0.3s ease-out forwards;
+  transform-origin: center center;
   pointer-events: none;
 }
 
 .column-implode-in {
-  animation: implodeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: implodeIn 0.3s ease-out forwards;
+  transform-origin: center center;
 }
 
 /* Hide columns after implode animation completes */
 .column-imploded {
-  display: none;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Exit focus animation - column returning from focus mode */
+@keyframes exitFocus {
+  0% {
+    transform: scale(1.05);
+    opacity: 0.7;
+    filter: blur(2px);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+.column-exit-focus {
+  animation: exitFocus 0.35s ease-out forwards;
+  transform-origin: center center;
 }
