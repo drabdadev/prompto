@@ -165,30 +165,41 @@ splashWindow = new BrowserWindow({
 ```
 
 ### 2. better-sqlite3 NODE_MODULE_VERSION Mismatch
-**Errore**: "NODE_MODULE_VERSION 131 vs 140" al primo avvio.
+**Errore**: "NODE_MODULE_VERSION 131 vs 140" o "is not a valid Win32 application"
 **Causa**: Il modulo nativo è compilato per Node.js locale, non Electron.
 
-**IMPORTANTE - Build Script Corretti:**
-Gli script `electron:build:*` NON devono avere `npm run rebuild:native` alla fine!
-Questo perché:
-1. `electron-builder` ricompila automaticamente better-sqlite3 per Electron (via `npmRebuild: true`)
-2. `npm run rebuild:native` lo ricompilerebbe per Node.js, rompendo la build
+**IMPORTANTE - Build Locale:**
+Gli script `electron:build:*` includono `rm -rf node_modules/better-sqlite3/build` per forzare la ricompilazione.
 
-**Script corretto** (già configurato):
-```json
-"electron:build:mac": "npm run build && electron-builder --mac"
+**IMPORTANTE - GitHub Actions (Windows):**
+Il workflow DEVE eseguire `electron-rebuild` PRIMA di `electron-builder`:
+```yaml
+- name: Rebuild native modules for Electron
+  run: npx electron-rebuild -f -w better-sqlite3
+
+- name: Build Electron (Windows)
+  run: npx electron-builder --win --publish never
 ```
+
+**Perché?** `npmRebuild: true` in electron-builder NON è sufficiente su CI:
+1. `npm ci` installa better-sqlite3 compilato per Node.js
+2. electron-builder copia i file nell'asar PRIMA del rebuild interno
+3. `asarUnpack` estrae la versione sbagliata (pre-rebuild)
+4. Risultato: "is not a valid Win32 application"
 
 **Se la build fallisce comunque**, fare clean rebuild:
 ```bash
 rm -rf dist-electron node_modules/better-sqlite3/build
 npx electron-rebuild -f -w better-sqlite3
-npm run electron:build:mac
+npm run electron:build:mac  # o :win
 ```
 
 **Verifica rapida dell'app:**
 ```bash
+# macOS
 dist-electron/mac-arm64/Prompto.app/Contents/MacOS/Prompto 2>&1 | head -20
+
+# Windows - controlla %TEMP%\prompto-debug.log
 # Deve mostrare "Database initialized OK" e "Server running on port 5080"
 ```
 

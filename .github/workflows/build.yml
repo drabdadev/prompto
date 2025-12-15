@@ -40,6 +40,24 @@ jobs:
       - name: Build client
         run: npm run build
 
+      - name: Rebuild native modules for Electron
+        run: npx electron-rebuild -f -w better-sqlite3
+
+      - name: Verify native module architecture
+        run: |
+          echo "Checking better-sqlite3.node file..."
+          Get-ChildItem -Recurse -Filter "better_sqlite3.node" | ForEach-Object {
+            Write-Host "Found: $($_.FullName)"
+            # Check if it's a valid PE file for x64
+            $bytes = [System.IO.File]::ReadAllBytes($_.FullName)
+            if ($bytes[0] -eq 0x4D -and $bytes[1] -eq 0x5A) {
+              Write-Host "  Valid PE header (MZ)"
+            } else {
+              Write-Host "  WARNING: Invalid PE header!"
+            }
+          }
+        shell: pwsh
+
       - name: Build Electron (Windows)
         run: npx electron-builder --win --publish never
         env:
