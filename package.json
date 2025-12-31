@@ -8,6 +8,7 @@
     "server": "nodemon server/server.js",
     "client": "cd client && npm run dev",
     "dev": "npm run setup:web && concurrently \"npm run server\" \"npm run client\"",
+    "dev:grab": "npm run setup:web && concurrently \"npm run server\" \"cd client && npm run dev:grab\"",
     "build": "cd client && npm run build",
     "init-db": "node server/init-database.js",
     "install-all": "npm install && cd client && npm install",

@@ -1,9 +1,10 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import reactGrab from '../../.react-grab/vite-plugin.js'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), reactGrab({ agent: 'claude-code' })],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
