@@ -28,11 +28,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24.18.0'
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --global npm@11.17.0 && npm ci
 
       - name: Install client dependencies
         run: cd client && npm ci

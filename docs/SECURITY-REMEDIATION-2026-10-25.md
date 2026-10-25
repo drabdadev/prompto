@@ -1,0 +1,7 @@
+# Security remediation — 25 October 2026
+
+The previous SECURITY-ADVISORIES.md is a dated scanner snapshot. Electron 44.9.1, electron-builder 26.18, updater 6.8.11, better-sqlite3 12.11.1, Multer 2.5 and compatible HTTP/dependency patches remove all root audit findings. The client retains three moderate development-tool findings in the Tailwind chain, with no high or critical findings. Both committed npm lockfiles were regenerated with npm 11.17.0; validation uses Node 24.18.0.
+
+Both frozen installs, application type checking, client production build and lint passed (six existing nonblocking warnings). `npm run test:server` uses the built-in Node test runner and exercises the actual database initializer, all four migrations, SQLite integrity, rollback and real project/prompt HTTP routes in a temporary database. It replaces the previously nonfunctional Jest command. Optional React Grab support loads only during development when the external helper is present.
+
+An unsigned, unpublished macOS arm64 application directory was packaged with signing discovery disabled. Running the packaged Electron 44.9.1 in Node mode successfully loaded its rebuilt better-sqlite3 native module and read/wrote an in-memory database. The normal user application and its persistent database were never opened. This verifies native module compatibility on this Mac, not Windows packaging, signing or installer distribution. No release tag or store publication was created.

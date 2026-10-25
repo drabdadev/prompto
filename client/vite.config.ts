@@ -1,10 +1,18 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type PluginOption } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
-import reactGrab from '../../.react-grab/vite-plugin.js'
+import { existsSync } from 'node:fs'
+import { pathToFileURL } from 'node:url'
 
-export default defineConfig({
-  plugins: [react(), reactGrab({ agent: 'claude-code' })],
+export default defineConfig(async ({ command }) => {
+  const plugins: PluginOption[] = [react()]
+  const pluginPath = path.resolve(__dirname, '../../.react-grab/vite-plugin.js')
+  if (command === 'serve' && existsSync(pluginPath)) {
+    const { default: reactGrab } = await import(pathToFileURL(pluginPath).href)
+    plugins.push(reactGrab({ agent: 'claude-code' }))
+  }
+  return {
+  plugins,
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -25,4 +33,5 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: true,
   },
+  }
 })
