@@ -2,7 +2,9 @@
 
 > **Aggiornamento automatico del 2026-10-26:** lockfile rianalizzati sul branch principale (commit `6b8f752`). 112 voci su 112 risultano **risolte** (la versione vulnerabile non è più presente nei lockfile: pacchetto aggiornato a una versione non affetta oppure rimosso); nessuna voce resta aperta. Lo stato di ogni voce qui sotto è aggiornato a questa data; le altre informazioni (versione installata, gravità, fonti) si riferiscono al controllo originario del 2026-10-24.
 
-Ultimo controllo: **2026-10-26** (prima analisi: 2026-10-24; analisi automatica dipendenze npm da lockfile).
+> **Aggiornamento automatico del 2026-10-31:** rilevate **2 nuove vulnerabilità** di gravità ALTA verificate (GHSA + NVD + advisory del progetto): `follow-redirects` 1.16.1 (prod, `client/package-lock.json`, `package-lock.json`): GHSA-mrwp-f3q8-3g9p, corretta in **1.16.2**; `joi` 18.3.0 (dev, `package-lock.json`): GHSA-4528-x5fx-h6hg, corretta in **18.3.1**. Le altre voci non sono cambiate.
+
+Ultimo controllo: **2026-10-31** (prima analisi: 2026-10-24; analisi automatica dipendenze npm da lockfile).
 Criteri: solo vulnerabilità con CVSS ≥ 7 o presenti nel catalogo CISA KEV, che colpiscono la versione esatta installata nel lockfile, con fix disponibile, verificate su almeno due fonti ufficiali (GitHub Advisory Database + NVD e/o advisory del progetto).
 
 Legenda ambito: **prod** = dipendenza di runtime; **dev** = solo sviluppo/build.
@@ -47,6 +49,8 @@ Legenda ambito: **prod** = dipendenza di runtime; **dev** = solo sviluppo/build.
 | `picomatch` | 2.3.1 | dev | 1 | ALTA (7.5) | 2.3.2 | risolto (2026-10-26) – ora 2.3.2, 4.0.7 |
 | `picomatch` | 4.0.3 | dev | 1 | ALTA (7.5) | 4.0.4 | risolto (2026-10-26) – ora 2.3.2, 4.0.7 |
 | `postcss` | 8.5.6 | dev | 2 | ALTA (7.5) | 8.5.18 | risolto (2026-10-26) – ora 8.5.31 |
+| `follow-redirects` | 1.16.1 | prod | 1 | ALTA (8.2) | 1.16.2 | aperto |
+| `joi` | 18.3.0 | dev | 1 | ALTA (7.5) | 18.3.1 | aperto |
 
 ## Dettaglio
 
@@ -967,3 +971,30 @@ File: `client/package-lock.json`
   - Fonti verificate: [GHSA](https://github.com/advisories/GHSA-r28c-9q8g-f849) · [NVD](https://nvd.nist.gov/vuln/detail/CVE-2026-73646) · [Progetto](https://github.com/postcss/postcss/security/advisories/GHSA-r28c-9q8g-f849)
   - Stato: risolto (2026-10-26) — versione ora nel lockfile: 8.5.31
 
+### `follow-redirects` 1.16.1 (prod)
+
+File: `client/package-lock.json`, `package-lock.json`
+
+**Azione consigliata:** aggiornare `follow-redirects` almeno a **1.16.2** (se è una dipendenza transitiva, aggiornare il pacchetto che la richiede o usare `overrides` in package.json), rigenerare il lockfile e rieseguire build e test.
+
+- **GHSA-mrwp-f3q8-3g9p** / CVE-2026-116689 — gravità ALTA (CVSS 8.2 v4.0; 5.9 v3.1)
+  - Problema: follow-redirects: Cross-realm sensitiveHeaders arrays are discarded and credential headers leak on cross-origin redirects
+  - Impatto: Esposizione di credenziali: se l'opzione `sensitiveHeaders` viene passata come array creato in un altro contesto JavaScript (es. `vm`, iframe, worker), viene ignorata e intestazioni sensibili possono essere inoltrate a un dominio diverso durante un redirect.
+  - Versione corretta: 1.16.2
+  - Fonti verificate: [GHSA](https://github.com/advisories/GHSA-mrwp-f3q8-3g9p) · [NVD](https://nvd.nist.gov/vuln/detail/CVE-2026-116689) · [Progetto](https://github.com/follow-redirects/follow-redirects/security/advisories/GHSA-mrwp-f3q8-3g9p)
+  - Rilevata il: 2026-10-31
+  - Stato: aperto
+
+### `joi` 18.3.0 (dev)
+
+File: `package-lock.json`
+
+**Azione consigliata:** aggiornare `joi` almeno a **18.3.1** (se è una dipendenza transitiva, aggiornare il pacchetto che la richiede o usare `overrides` in package.json), rigenerare il lockfile e rieseguire build e test. Il rischio pratico è più basso perché il pacchetto è usato solo in sviluppo/build.
+
+- **GHSA-4528-x5fx-h6hg** / CVE-2026-118772 — gravità ALTA (CVSS 7.5)
+  - Problema: joi: quadratic-time split in `string().email({ multiple: true })` allows denial of service
+  - Impatto: Denial of Service: con la regola `Joi.string().email({ multiple: true })` un input con lunghe sequenze di spazi richiede tempo quadratico e può bloccare il processo Node.js.
+  - Versione corretta: 18.3.1
+  - Fonti verificate: [GHSA](https://github.com/advisories/GHSA-4528-x5fx-h6hg) · [NVD](https://nvd.nist.gov/vuln/detail/CVE-2026-118772) · [Progetto](https://github.com/hapijs/joi/security/advisories/GHSA-4528-x5fx-h6hg)
+  - Rilevata il: 2026-10-31
+  - Stato: aperto
