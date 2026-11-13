@@ -4,7 +4,7 @@
 
 > **Aggiornamento automatico del 2026-10-31:** rilevate **2 nuove vulnerabilità** di gravità ALTA verificate (GHSA + NVD + advisory del progetto): `follow-redirects` 1.16.1 (prod, `client/package-lock.json`, `package-lock.json`): GHSA-mrwp-f3q8-3g9p, corretta in **1.16.2**; `joi` 18.3.0 (dev, `package-lock.json`): GHSA-4528-x5fx-h6hg, corretta in **18.3.1**. Le altre voci non sono cambiate.
 
-Ultimo controllo: **2026-11-12** (prima analisi: 2026-10-24; analisi automatica dipendenze npm da lockfile).
+Ultimo controllo: **2026-11-13** (prima analisi: 2026-10-24; analisi automatica dipendenze npm da lockfile).
 Criteri: solo vulnerabilità con CVSS ≥ 7 o presenti nel catalogo CISA KEV, che colpiscono la versione esatta installata nel lockfile, con fix disponibile, verificate su almeno due fonti ufficiali (GitHub Advisory Database + NVD e/o advisory del progetto).
 
 Legenda ambito: **prod** = dipendenza di runtime; **dev** = solo sviluppo/build.
